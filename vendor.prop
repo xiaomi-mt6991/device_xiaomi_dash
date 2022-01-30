@@ -243,6 +243,10 @@ ro.incremental.enable=yes
 ro.vendor.init.sensor.rc=init.sensor_2_0.rc
 ro.vendor.rc=/vendor/etc/init/hw/
 
+# HWUI
+debug.hwui.target_cpu_time_percent=30
+debug.hwui.use_hint_manager=true
+
 # LMK tuning
 ro.lmk.filecache_min_kb=153600
 ro.lmk.kill_timeout_ms=50
