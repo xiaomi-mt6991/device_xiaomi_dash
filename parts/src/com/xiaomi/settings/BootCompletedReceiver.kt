@@ -9,9 +9,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder;
+import android.hardware.display.DisplayManager;
 import android.util.Log
+import android.view.Display;
 import android.view.Display.HdrCapabilities;
-import android.view.SurfaceControl;
 import com.xiaomi.settings.display.ColorService
 import com.xiaomi.settings.touch.TouchReportRateService
 
@@ -25,9 +26,9 @@ class BootCompletedReceiver : BroadcastReceiver() {
         }
 
         // Override HDR types
-        val displayToken = SurfaceControl.getInternalDisplayToken()
-        SurfaceControl.overrideHdrTypes(
-            displayToken,
+        val displayManager = context.getSystemService(DisplayManager::class.java)
+        displayManager.overrideHdrTypes(
+            Display.DEFAULT_DISPLAY,
             intArrayOf(
                 HdrCapabilities.HDR_TYPE_DOLBY_VISION,
                 HdrCapabilities.HDR_TYPE_HDR10,
