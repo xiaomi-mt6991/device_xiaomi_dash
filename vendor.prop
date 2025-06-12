@@ -246,6 +246,7 @@ ro.vendor.rc=/vendor/etc/init/hw/
 # HWUI
 debug.hwui.target_cpu_time_percent=30
 debug.hwui.use_hint_manager=true
+debug.sf.enable_adpf_cpu_hint=true
 
 # LMK tuning
 ro.lmk.filecache_min_kb=153600
