@@ -16,8 +16,8 @@ on charger
 
 on post-fs
     # Dalvik configuration
-    setprop dalvik.vm.dex2oat-threads 6
-    setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5
+    setprop dalvik.vm.dex2oat-threads 4
+    setprop dalvik.vm.dex2oat-cpu-set 2,3,4,5
 
 on post-fs-data
     write /sys/devices/system/cpu/cpufreq/policy0/scaling_governor schedutil
