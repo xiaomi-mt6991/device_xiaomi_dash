@@ -296,6 +296,10 @@ PRODUCT_PACKAGES += \
     android.hardware.fastboot-service.example_recovery \
     fastbootd
 
+# Parts
+PRODUCT_PACKAGES += \
+    XiaomiParts
+
 # Platform
 TARGET_BOARD_PLATFORM := mt6991
 
