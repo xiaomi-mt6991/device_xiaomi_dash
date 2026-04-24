@@ -1,3 +1,5 @@
+hal_client_domain(hal_audio_default, hal_aidl_dms)
+
 r_dir_file(hal_audio_default, persist_data_file)
 r_dir_file(hal_audio_default, sysfs_therm)
 rw_dir_file(hal_audio_default, sysfs_vibrator)

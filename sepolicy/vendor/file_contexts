@@ -23,6 +23,9 @@
 /data/vendor/display(/.*)? u:object_r:vendor_display_data_file:s0
 /mnt/vendor/persist/display(/.*)? u:object_r:vendor_persist_display_file:s0
 
+# Dolby
+/vendor/bin/hw/vendor\.dolby\.dms\.service u:object_r:hal_aidl_dms_default_exec:s0
+
 # eSIM
 /vendor/bin/init\.esim\.sh    u:object_r:vendor_esim_init_shell_exec:s0
 /vendor/bin/mtkmtb            u:object_r:vendor_mtkmtb_exec:s0
