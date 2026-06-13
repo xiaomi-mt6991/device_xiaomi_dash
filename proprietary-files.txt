@@ -1485,6 +1485,18 @@ vendor/lib64/mt6991/libaal_cust_func.so;SYMLINK=vendor/lib64/libaal_cust_func.so
 vendor/lib64/mt6991/libaalservice.so;SYMLINK=vendor/lib64/libaalservice.so
 vendor/lib64/mt6991/libdre.so;SYMLINK=vendor/lib64/libdre.so
 
+# Display - Dolby Vision
+vendor/bin/hw/vendor.dolby.media.c2-service-vision
+vendor/etc/init/vendor.dolby.media.c2-service-vision.rc
+vendor/etc/dolby_vision.cfg
+vendor/lib64/c2.dolby.client.so
+vendor/lib64/c2.dolby.hevc.dec.so
+vendor/lib64/c2.dolby.hevc.sec.dec.so
+vendor/lib64/c2.dolby.store.so
+vendor/lib64/libdolbydecoderprocessor.so
+vendor/lib64/libdolbyeglcore.so
+vendor/lib64/libdolbyottcameracontrol.so
+
 # Display - GPU extensions
 vendor/bin/hw/vendor.mediatek.hardware.gpuserv-service
 vendor/etc/init/gpuserv-default.rc
@@ -1897,6 +1909,7 @@ vendor/etc/seccomp_policy/android.hardware.media.c2@1.2-extended-seccomp-policy
 vendor/etc/seccomp_policy/android.hardware.media.c2@1.2-mediatek-seccomp-policy
 vendor/etc/vintf/manifest/manifest_media_c2_default.xml
 vendor/lib64/libSEGModel.so
+vendor/lib64/libcodec2_aidl.so:vendor/lib64/libcodec2_aidl_prebuilt.so;FIX_SONAME
 vendor/lib64/libcodec2_fsr.so
 vendor/lib64/libcodec2_mtk_c2store.so
 vendor/lib64/libcodec2_mtk_vdec.so

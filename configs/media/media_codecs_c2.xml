@@ -173,6 +173,46 @@
             <Limit name="performance-point-3840x2160" value="120" />
             <Limit name="performance-point-1920x1079" value="180" />
         </MediaCodec>
+        <MediaCodec name="c2.dolby.decoder.hevc.secure" type="video/dolby-vision">
+            <Alias name="OMX.MTK.VIDEO.DECODER.HEVC.secure" />
+            <Limit name="size" min="16x16" max="4096x2176" />
+            <Feature name="secure-playback" required="true" />
+            <Feature name="adaptive-playback"/>
+            <Limit name="concurrent-instances" max="15" />
+            <Limit name="bitrate" range="1-40000000" />
+            <Limit name="performance-point-4096x2176" value="60" />
+            <Limit name="performance-point-3840x2160" value="120" />
+        </MediaCodec>
+        <MediaCodec name="c2.dolby.decoder.hevc" type="video/dolby-vision">
+            <Alias name="OMX.MTK.VIDEO.DECODER.HEVC" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="size" min="16x16" max="8192x4352" />
+            <!-- max 8192x4352@60 -->
+            <Limit name="block-count" range="1-138240" />
+            <Limit name="blocks-per-second" range="1-8294400" />
+            <Limit name="bitrate" range="1-240000000" />
+            <Feature name="adaptive-playback"/>
+            <Feature name="can-swap-width-height"/>
+            <Feature name="dynamic-color-aspects"/>
+            <Limit name="concurrent-instances" max="15" />
+            <Limit name="performance-point-3840x2160" value="120" />
+            <Limit name="performance-point-1920x1079" value="180" />
+        </MediaCodec>
+        <MediaCodec name="c2.dolby.decoder.hevc.secure" type="video/dolby-vision">
+            <Alias name="OMX.MTK.VIDEO.DECODER.HEVC.secure" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="size" min="16x16" max="3840x2160" />
+            <!-- max 3840x2160@60 -->
+            <Limit name="block-count" range="1-32400" />
+            <Limit name="blocks-per-second" range="1-1944000" />
+            <Limit name="bitrate" range="1-40000000" />
+            <Feature name="secure-playback" required="true" />
+            <Feature name="adaptive-playback"/>
+            <Limit name="concurrent-instances" max="15" />
+            <Limit name="performance-point-3840x2160" value="120" />
+        </MediaCodec>
         <MediaCodec name="c2.mtk.heif.decoder" type="image/vnd.android.heic">
             <Alias name="OMX.MTK.VIDEO.DECODER.HEIF" />
             <Limit name="size" min="16x16" max="16383x16383" />

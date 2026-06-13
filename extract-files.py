@@ -189,8 +189,6 @@ blob_fixups: blob_fixups_user_type = {
         'vendor/etc/init/arm.mali.platform-mediatek.rc'
     ): blob_fixup()
         .regex_replace('.*writepid.*\n', ''),
-    'vendor/etc/vintf/manifest/manifest_media_c2_default.xml': blob_fixup()
-        .regex_replace('    <fqname>IComponentStore/dolby</fqname>\n', ''),
     'vendor/lib64/hw/android.hardware.audio.effect.aidl-impl-mediatek.so': blob_fixup()
         .replace_needed('android.media.audio.common.types-V5-ndk.so', 'android.media.audio.common.types-V3-ndk.so')
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v36.so'),
@@ -247,6 +245,17 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .regex_replace('ic_rate_normal=120', 'ic_rate_normal=240')
         .regex_replace('rate_normal=120', 'rate_normal=480'),
+    (
+        'vendor/bin/hw/android.hardware.media.c2-mediatek-64b',
+        'vendor/bin/hw/vendor.dolby.media.c2-default-service-dax',
+        'vendor/bin/hw/vendor.dolby.media.c2-service-vision',
+        'vendor/lib64/c2.dolby.client.so',
+        'vendor/lib64/c2.dolby.hevc.dec.so',
+        'vendor/lib64/c2.dolby.hevc.sec.dec.so',
+        'vendor/lib64/libcodec2_mtk_vdec.so',
+        'vendor/lib64/libcodec2_mtk_venc.so'
+    ): blob_fixup()
+        .replace_needed('libcodec2_aidl.so', 'libcodec2_aidl_prebuilt.so'),
 }  # fmt: skip
 
 module = ExtractUtilsModule(

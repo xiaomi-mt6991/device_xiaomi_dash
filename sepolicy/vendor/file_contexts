@@ -25,6 +25,8 @@
 
 # Dolby
 /vendor/bin/hw/vendor\.dolby\.dms\.service u:object_r:hal_aidl_dms_default_exec:s0
+/vendor/bin/hw/vendor\.dolby\.media\.c2-default-service-dax u:object_r:mediacodec_exec:s0
+/vendor/bin/hw/vendor\.dolby\.media\.c2-service-vision u:object_r:mediacodec_exec:s0
 
 # eSIM
 /vendor/bin/init\.esim\.sh    u:object_r:vendor_esim_init_shell_exec:s0
