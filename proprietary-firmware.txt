@@ -10,7 +10,6 @@ dpm.img;AB
 dtbo.img;AB
 gpueb.img;AB
 gz.img;AB
-lk.img;AB
 mcf_ota.img;AB
 mcupm.img;AB
 modem.img;AB
@@ -24,3 +23,6 @@ vcp.img;AB
 
 # ENG
 preloader_dash.bin:preloader_raw.img;AB|16f73709c9ebf12828a40dc977a593a4a9573665
+
+# LK
+dash-fenrir.bin:lk.img;AB|d25118309fe0f77ae26ba0473592ad62fbf80d99
