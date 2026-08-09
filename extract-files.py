@@ -240,12 +240,6 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .replace_needed('android.hardware.camera.device-V1-ndk.so', 'android.hardware.camera.device-V2-ndk.so'),
     (
-        'odm/firmware/p10u_nova_csot_thp_config.ini',
-        'odm/firmware/p10u_nova_tm_thp_config.ini'
-    ): blob_fixup()
-        .regex_replace('ic_rate_normal=120', 'ic_rate_normal=240')
-        .regex_replace('rate_normal=120', 'rate_normal=480'),
-    (
         'vendor/bin/hw/android.hardware.media.c2-mediatek-64b',
         'vendor/bin/hw/vendor.dolby.media.c2-default-service-dax',
         'vendor/bin/hw/vendor.dolby.media.c2-service-vision',
