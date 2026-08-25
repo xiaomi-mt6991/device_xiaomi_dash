@@ -154,7 +154,7 @@ PRODUCT_COPY_FILES += \
 
 # Dolby
 PRODUCT_PACKAGES += \
-    XiaomiDolby
+    LunarisDolby
 
 # DRM
 PRODUCT_PACKAGES += \
