@@ -132,7 +132,7 @@
         "702"
       ],
       "ResetOnInit": true,
-      "DefaultIndex": 6,
+      "DefaultIndex": 0,
       "Comments": [
         "NORMAL",
         "HUANJI",
@@ -289,13 +289,13 @@
       "PowerHint": "LAUNCH",
       "Node": "CPUEfficiencyClusterMinFreq",
       "Duration": 0,
-      "Value": "1900000"
+      "Value": "1000000"
     },
     {
       "PowerHint": "LAUNCH",
       "Node": "CPUSuperClusterMinFreq",
       "Duration": 0,
-      "Value": "2500000"
+      "Value": "2200000"
     },
     {
       "PowerHint": "LAUNCH",
@@ -373,43 +373,43 @@
       "PowerHint": "GAME_LOADING",
       "Node": "CPUEfficiencyClusterMinFreq",
       "Duration": 0,
-      "Value": "2000000"
+      "Value": "1000000"
     },
     {
       "PowerHint": "GAME_LOADING",
       "Node": "CPUSuperClusterMinFreq",
       "Duration": 0,
-      "Value": "2500000"
+      "Value": "2200000"
     },
     {
       "PowerHint": "GAME_LOADING",
       "Node": "CPUUltraClusterMinFreq",
       "Duration": 0,
-      "Value": "2900000"
+      "Value": "3000000"
     },
     {
       "PowerHint": "INTERACTION",
       "Node": "CPUSuperClusterMinFreq",
       "Duration": 0,
-      "Value": "1100000"
+      "Value": "1000000"
     },
     {
       "PowerHint": "INTERACTION",
       "Node": "CPUUltraClusterMinFreq",
       "Duration": 0,
-      "Value": "1100000"
+      "Value": "1000000"
     },
     {
       "PowerHint": "INTERACTION",
       "Node": "CPUSuperClusterMaxFreq",
       "Duration": 0,
-      "Value": "3000000"
+      "Value": "2500000"
     },
     {
       "PowerHint": "INTERACTION",
       "Node": "CPUUltraClusterMaxFreq",
       "Duration": 0,
-      "Value": "3000000"
+      "Value": "2700000"
     },
     {
       "PowerHint": "INTERACTION",
