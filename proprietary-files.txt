@@ -2512,9 +2512,7 @@ vendor/lib64/liboemcrypto.so
 vendor/lib64/libwvkeybox.so
 
 # Wifi
-vendor/bin/wlan_assistant
 vendor/etc/init/init.wlan_drv.rc
-vendor/etc/init/wlan_assistant.rc
 vendor/etc/wifi/nvram/wfnv_desc_data_6639.bin
 vendor/etc/wifi/nvram/wfnv_desc_data_6653.bin
 vendor/etc/wifi/nvram/wfnv_desc_map_6639.bin
