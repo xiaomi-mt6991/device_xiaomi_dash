@@ -103,6 +103,9 @@ ro.vendor.wlan.gen=gen4m_6991_6653
 ro.vendor.wlan.standalone.log=y
 vendor.connsys.driver.ready=no
 
+# ConsumerIR
+ro.hardware.consumerir=common
+
 # Crypto
 ro.crypto.metadata_init_delete_all_keys.enabled=true
 ro.crypto.volume.options=aes-256-xts:aes-256-hctr2
