@@ -2,10 +2,14 @@
 vendor.xiaomi.hardware.mediaeventgatherservice.IMediaGather/default u:object_r:hal_audio_service:s0
 
 # Camera
-vendor.xiaomi.hardware.aidlbgservice.IBGService/default u:object_r:hal_camera_service:s0
+# NOTE: IBGService/IPostProcService are labeled xiaomi_mivi_service (declared
+# in dash-miuicamera/sepolicy/vendor/service.te, mapped there) so priv_app can
+# be granted find without joining hal_camera_client (which trips video_device
+# neverallows). Do not move them back to hal_camera_service.
+vendor.xiaomi.hardware.aidlbgservice.IBGService/default u:object_r:xiaomi_mivi_service:s0
 vendor.xiaomi.hardware.camera.injection.ICameraInjectionService/default u:object_r:hal_camera_service:s0
 vendor.xiaomi.hardware.camera.synthetic.IVirtualCameraRegistrar/default u:object_r:hal_camera_service:s0
-vendor.xiaomi.hardware.postprocservice.IPostProcService/default u:object_r:hal_camera_service:s0
+vendor.xiaomi.hardware.postprocservice.IPostProcService/default u:object_r:xiaomi_mivi_service:s0
 
 # DisplayFeature
 vendor.xiaomi.hardware.displayfeature_aidl.IDisplayFeature/default u:object_r:vendor_hal_displayfeature_service:s0
