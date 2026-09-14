@@ -212,3 +212,4 @@ WIFI_FEATURE_SUPPLICANT_11AX := true
 
 # Inherit the proprietary files
 include vendor/xiaomi/dash/BoardConfigVendor.mk
+-include device/xiaomi/dash-miuicamera/BoardConfig.mk

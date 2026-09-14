@@ -9,3 +9,11 @@ type hal_mtdservice_service, protected_service, service_manager_type, hal_servic
 
 # TouchFeature
 type hal_touchfeature_xiaomi_service, protected_service, service_manager_type, hal_service_type;
+
+# MIUICamera (dash) MIVI bg services (IBGService/IPostProcService, mapped in
+# vendor/service_contexts). Deliberately bare service_manager_type (no
+# hal_service_type): priv_app must be grantable find without joining any HAL
+# client attribute, and mtk_hal_camera must be grantable add - both defined in
+# dash-miuicamera/sepolicy/vendor/miuicamera.te. A fresh type has no
+# neverallow coverage by construction.
+type xiaomi_mivi_service, service_manager_type;
