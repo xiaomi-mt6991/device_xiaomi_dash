@@ -17,3 +17,14 @@ type hal_touchfeature_xiaomi_service, protected_service, service_manager_type, h
 # dash-miuicamera/sepolicy/vendor/miuicamera.te. A fresh type has no
 # neverallow coverage by construction.
 type xiaomi_mivi_service, service_manager_type;
+
+# Camera (Xiaomi HAL services provided by camerahalserver/mtk_hal_camera).
+# Labels mirror stock vendor_service_contexts (hal_mivimessage_service,
+# hal_quickcamera_service, aidlintentaware_service). Bare service_manager_type
+# like xiaomi_mivi_service above: keeps app find grants neverallow-clean.
+# Without these, registration fails at boot with
+# avc: denied { add } ... tcontext=u:object_r:default_android_service:s0
+# (observed live for all three).
+type hal_mivimessage_service, service_manager_type;
+type hal_quickcamera_service, service_manager_type;
+type aidlintentaware_service, service_manager_type;

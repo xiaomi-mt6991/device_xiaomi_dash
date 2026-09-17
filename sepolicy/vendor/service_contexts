@@ -10,6 +10,9 @@ vendor.xiaomi.hardware.aidlbgservice.IBGService/default u:object_r:xiaomi_mivi_s
 vendor.xiaomi.hardware.camera.injection.ICameraInjectionService/default u:object_r:hal_camera_service:s0
 vendor.xiaomi.hardware.camera.synthetic.IVirtualCameraRegistrar/default u:object_r:hal_camera_service:s0
 vendor.xiaomi.hardware.postprocservice.IPostProcService/default u:object_r:xiaomi_mivi_service:s0
+vendor.xiaomi.hardware.camera.mivimessage.IService/default u:object_r:hal_mivimessage_service:s0
+vendor.xiaomi.hardware.quickcamera.IQuickCameraService/default u:object_r:hal_quickcamera_service:s0
+vendor.xiaomi.hardware.aidl.intentaware.IIntentAwareService/default u:object_r:aidlintentaware_service:s0
 
 # DisplayFeature
 vendor.xiaomi.hardware.displayfeature_aidl.IDisplayFeature/default u:object_r:vendor_hal_displayfeature_service:s0
