@@ -771,6 +771,7 @@ odm/lib64/libmialgo_ellc.so
 odm/lib64/libmialgo_ie_capture.so
 odm/lib64/libmialgo_sd.so
 odm/lib64/libmialgo_utils.so
+odm/lib64/libmiocr.so
 odm/lib64/libmiphone_capture_bokeh.so
 odm/lib64/libmiphone_dualcam_depth_aideploy.so
 odm/lib64/libmismartae.so
