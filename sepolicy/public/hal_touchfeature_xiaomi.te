@@ -1,0 +1,7 @@
+# TouchFeature
+# The vendor service and its domain are declared here (system_ext public) so
+# XiaomiParts (system_ext app, parts_app) can find/binder-call them; vendor
+# policy cannot see system_ext types, and system_ext policy cannot see vendor
+# types. Mirrors the displayfeature pattern in hal_displayfeature_xiaomi.te.
+type hal_touchfeature_xiaomi_service, protected_service, service_manager_type, hal_service_type;
+type hal_touchfeature_xiaomi_default, domain;

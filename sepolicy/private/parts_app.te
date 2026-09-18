@@ -14,6 +14,14 @@ allow parts_app system_app_data_file:dir create_dir_perms;
 allow parts_app system_app_data_file:file create_file_perms;
 allow parts_app system_app_data_file:lnk_file create_file_perms;
 
+# Parts (XiaomiParts touch toggle drives both HTSR channels: proc node + touchfeature)
+allow parts_app proc_touch_file:file rw_file_perms;
+
+# Parts (HTSR ON asserts touchfeature GAME/ACTIVE=1, OFF resets them so a
+# stale game session cannot keep the high rate)
+allow parts_app hal_touchfeature_xiaomi_service:service_manager find;
+binder_call(parts_app, hal_touchfeature_xiaomi_default)
+
 # Displayfeature
 allow parts_app vendor_hal_displayfeature_service:service_manager find;
 binder_call(parts_app, vendor_hal_displayfeature_default)

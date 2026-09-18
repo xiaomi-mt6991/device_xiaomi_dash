@@ -7,9 +7,6 @@ type hal_idmanager_service, protected_service, service_manager_type, hal_service
 # MTD service
 type hal_mtdservice_service, protected_service, service_manager_type, hal_service_type;
 
-# TouchFeature
-type hal_touchfeature_xiaomi_service, protected_service, service_manager_type, hal_service_type;
-
 # MIUICamera (dash) MIVI bg services (IBGService/IPostProcService, mapped in
 # vendor/service_contexts). Deliberately bare service_manager_type (no
 # hal_service_type): priv_app must be grantable find without joining any HAL
