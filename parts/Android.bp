@@ -12,7 +12,9 @@ android_app {
     privileged: true,
     system_ext_specific: true,
     static_libs: [
+        "SettingsLib",
         "androidx.core_core",
+        "androidx.fragment_fragment",
         "androidx.preference_preference",
         "org.lineageos.settings.resources",
         "vendor.xiaomi.hardware.displayfeature_aidl-V2-java",

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/touch_title">
+
+    <com.android.settingslib.widget.MainSwitchPreference
+        android:key="touch_high_sampling_rate"
+        android:title="@string/touch_title" />
+
+    <PreferenceCategory
+        android:key="touch_category_persistence"
+        android:title="@string/touch_persistence_category">
+
+        <SwitchPreferenceCompat
+            android:key="touch_high_sampling_rate_persistent"
+            android:title="@string/touch_persistent_title"
+            android:summary="@string/touch_persistent_summary"
+            android:icon="@drawable/ic_touch_rate" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="touch_category_saver"
+        android:title="@string/touch_saver_category">
+
+        <SwitchPreferenceCompat
+            android:key="touch_pause_on_saver"
+            android:title="@string/touch_saver_title"
+            android:summary="@string/touch_saver_summary"
+            android:icon="@drawable/ic_touch_rate" />
+
+    </PreferenceCategory>
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="touch_footer"
+        android:title="@string/touch_footer"
+        android:selectable="false" />
+
+</PreferenceScreen>

@@ -4,6 +4,11 @@ allow hal_power_default touchfeature_device:file r_file_perms;
 allow hal_power_default hal_touchfeature_xiaomi_service:service_manager find;
 binder_call(hal_power_default, hal_touchfeature_xiaomi_default)
 
+# HTSR force toggle (XiaomiParts): read the toggle state back from the proc
+# node it writes. No property involved - coredomain cannot set vendor
+# properties (base neverallow) - and the proc type is tree-local.
+allow hal_power_default proc_touch_file:file r_file_perms;
+
 # To do powerhint on nodes defined in powerhint.json
 allow hal_power_default sysfs_devices_system_cpu:file rw_file_perms;
 allow hal_power_default cgroup:dir search;

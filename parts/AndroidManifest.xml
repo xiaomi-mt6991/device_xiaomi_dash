@@ -32,9 +32,56 @@
         </receiver>
 
         <service
+            android:name=".touch.TouchReportRateService"
+            android:permission="TouchReportRateService">
+        </service>
+
+        <provider
+            android:name=".touch.HtsrSwitchProvider"
+            android:authorities="com.xiaomi.settings.touch"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
+        <service
+            android:name=".touch.TouchReportRateTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_touch_rate"
+            android:label="@string/touch_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TILE_REQUIRES_UNLOCK"
+                android:value="false" />
+        </service>
+
+        <service
             android:name=".display.ColorService"
             android:permission="ColorService">
         </service>
+
+        <activity
+            android:name=".touch.TouchSettingsActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:label="@string/touch_title">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+            </intent-filter>
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.display" />
+            <meta-data
+                android:name="com.android.settings.order"
+                android:value="-10" />
+            <meta-data
+                android:name="com.android.settings.summary"
+                android:value="@string/touch_row_summary" />
+            <meta-data
+                android:name="com.android.settings.switch_uri"
+                android:value="content://com.xiaomi.settings.touch/htsr" />
+        </activity>
     </application>
 </manifest>
 

@@ -101,9 +101,21 @@ bool setDeviceSpecificMode(Mode type, bool enabled) {
             return false;
           }
 
+          // Forced HTSR toggle (XiaomiParts): the toggle holds
+          // /proc/xm_htc_report_rate at 240. If it reads back 240, keep the
+          // high rate on the touchfeature channel regardless of game state
+          // so exiting a game cannot drop it. Otherwise plain game detection.
+          bool target = enabled;
+          std::string rate;
+          if (::android::base::ReadFileToString("/proc/xm_htc_report_rate", &rate) &&
+              rate.find("240") != std::string::npos) {
+            LOG(INFO) << "HTSR forced on, keeping high report rate";
+            target = true;
+          }
+
           int32_t result = 0;
           const auto gameStatus = touchfeature->setModeValue(
-              TOUCH_ID, TOUCH_GAME_MODE, enabled ? 1 : 0, &result);
+              TOUCH_ID, TOUCH_GAME_MODE, target ? 1 : 0, &result);
           if (!gameStatus.isOk()) {
             LOG(ERROR) << "setModeValue failed for GAME: "
                        << gameStatus.getDescription();
@@ -116,7 +128,7 @@ bool setDeviceSpecificMode(Mode type, bool enabled) {
           }
 
           const auto activeStatus = touchfeature->setModeValue(
-              TOUCH_ID, TOUCH_ACTIVE_MODE, enabled ? 1 : 0, &result);
+              TOUCH_ID, TOUCH_ACTIVE_MODE, target ? 1 : 0, &result);
           if (!activeStatus.isOk()) {
             LOG(ERROR) << "setModeValue failed for ACTIVE: "
                        << activeStatus.getDescription();

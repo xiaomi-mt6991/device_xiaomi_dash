@@ -6,4 +6,18 @@
 <resources>
     <!-- App Name -->
     <string name="app_name">Xiaomi Parts</string>
+
+    <!-- Touch settings -->
+    <string name="touch_title">High Touch Sampling Rate</string>
+    <string name="touch_row_summary">Force 240Hz everywhere. When off, high rate applies in games only</string>
+    <string name="touch_tile_forced">Forced everywhere</string>
+    <string name="touch_tile_auto">Games only</string>
+    <string name="touch_persistent_title">Persistent across reboot and screen off</string>
+    <string name="touch_persistent_summary">Re-apply the forced rate after every reboot and screen-on. Turn off to make manual toggles one-shot</string>
+    <string name="touch_persistence_category">Persistence</string>
+    <string name="touch_saver_category">Battery saver</string>
+    <string name="touch_saver_title">Pause on battery saver</string>
+    <string name="touch_saver_summary">Drop to 120Hz while battery saver is on. Forced rate returns when saver turns off</string>
+    <string name="touch_unavailable_summary">High touch sampling rate is not available on this panel</string>
+    <string name="touch_footer">Forced mode applies 240Hz everywhere and is kept across game power-mode changes. When off, high rate applies in games only. The Quick Settings tile mirrors the main switch above.</string>
 </resources>
