@@ -217,6 +217,18 @@
 /sys/devices/platform/leds-mt65xx/leds/blue   delay_on      0664  system   system
 /sys/devices/platform/leds-mt65xx/leds/blue   delay_off      0664  system   system
 
+# aw21024 rgb led
+/sys/class/leds/aw21024_led   reg         0664  system   system
+/sys/class/leds/aw21024_led   effect      0664  system   system
+/sys/class/leds/aw21024_led   rgbcolor    0664  system   system
+/sys/class/leds/aw21024_led   hwen        0664  system   system
+/sys/class/leds/aw21024_led   brightness  0664  system   system
+/sys/class/leds/aw21024_led   run         0664  system   system
+/sys/class/leds/aw21024_led   period      0664  system   system
+/sys/class/leds/aw21024_led   color       0664  system   system
+/sys/class/leds/aw21024_led   repeat      0664  system   system
+/sys/class/leds/aw21024_led   gradient    0664  system   system
+
 #GPIO
 /dev/mtgpio               0600   radio      root
 

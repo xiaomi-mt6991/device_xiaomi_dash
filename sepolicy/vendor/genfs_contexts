@@ -48,6 +48,9 @@ genfscon sysfs /devices/virtual/mi_display/disp_feature/disp-DSI-0 u:object_r:ve
 # Extcon
 genfscon sysfs /devices/platform/soc/3ec00000.dp-tx/extcon u:object_r:sysfs_extcon:s0
 
+# Lights (AW21024 RGB LED)
+genfscon sysfs /class/leds/aw21024_led u:object_r:sysfs_leds_aw21024:s0
+
 # Memory
 genfscon proc /mv u:object_r:procfs_memory:s0
 

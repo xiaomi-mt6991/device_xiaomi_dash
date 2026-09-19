@@ -1896,6 +1896,12 @@ vendor/etc/vintf/manifest/android.hardware.security.secureclock-service.mitee.xm
 vendor/etc/vintf/manifest/android.hardware.security.sharedsecret-service.mitee.xml
 vendor/lib64/android.hardware.security.keymint-V3-ndk.so:vendor/lib64/android.hardware.security.keymint-V3-ndk-v36.so;FIX_SONAME
 
+# Lights
+odm/bin/hw/android.hardware.lights-service.mediatek
+odm/etc/init/lights-mtk-default.rc
+odm/etc/vintf/manifest/lights-mtk-default.xml
+vendor/lib64/vendor.mediatek.hardware.mtklight-V1-ndk.so
+
 # Media - Codec2
 vendor/bin/hw/android.hardware.media.c2-mediatek-64b
 vendor/etc/TL_settings.json

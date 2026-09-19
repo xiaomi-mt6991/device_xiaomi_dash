@@ -78,6 +78,9 @@
 # MIGT
 /dev/migt u:object_r:migt_dev:s0
 
+# Lights
+/(odm|vendor/odm|vendor|system/vendor)/bin/hw/android\.hardware\.lights-service\.mediatek u:object_r:hal_light_default_exec:s0
+
 # MI Thermal
 /(vendor|system/vendor)/bin/mi_thermald u:object_r:vendor_mi_thermald_exec:s0
 

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/backlight_title">
+
+    <com.android.settingslib.widget.MainSwitchPreference
+        android:key="backlight_master"
+        android:title="@string/backlight_title" />
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="backlight_intro"
+        android:title="@string/backlight_intro"
+        android:selectable="false" />
+
+    <PreferenceCategory
+        android:key="backlight_effects_category"
+        android:title="@string/backlight_effects_category">
+
+        <ListPreference
+            android:key="backlight_call"
+            android:title="@string/backlight_call_title"
+            android:entries="@array/backlight_call_names"
+            android:entryValues="@array/backlight_call_values" />
+
+        <Preference
+            android:key="backlight_game"
+            android:title="@string/backlight_game_title" />
+
+        <Preference
+            android:key="backlight_music"
+            android:title="@string/backlight_music_title" />
+
+        <Preference
+            android:key="backlight_notif"
+            android:title="@string/backlight_notif_title" />
+
+        <Preference
+            android:key="backlight_notif_access"
+            android:title="@string/backlight_notif_access_title"
+            android:summary="@string/backlight_notif_access_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="backlight_camera"
+            android:title="@string/backlight_camera_title"
+            android:summary="@string/backlight_camera_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="backlight_additional_category"
+        android:title="@string/backlight_additional_category">
+
+        <ListPreference
+            android:key="backlight_color"
+            android:title="@string/backlight_color_title"
+            android:entries="@array/backlight_color_names"
+            android:entryValues="@array/backlight_color_values" />
+
+        <com.android.settingslib.widget.SliderPreference
+            android:key="backlight_brightness"
+            android:title="@string/backlight_brightness_title" />
+
+    </PreferenceCategory>
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="backlight_footer"
+        android:title="@string/backlight_footer"
+        android:selectable="false" />
+
+</PreferenceScreen>

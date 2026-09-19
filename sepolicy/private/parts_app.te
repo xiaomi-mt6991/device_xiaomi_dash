@@ -8,6 +8,13 @@ allow parts_app activity_task_service:service_manager find;
 allow parts_app audio_service:service_manager find;
 allow parts_app netstats_service:service_manager find;
 allow parts_app power_service:service_manager find;
+
+# Parts (Back light effects managers; cameraserver/radio/thermal mirror
+# platform_app baseline, usagestats needs the explicit grant)
+allow parts_app cameraserver_service:service_manager find;
+allow parts_app radio_service:service_manager find;
+allow parts_app thermal_service:service_manager find;
+allow parts_app usagestats_service:service_manager find;
 allow parts_app vendor_hal_displayfeature_xiaomi_service:service_manager find;
 binder_call(parts_app, vendor_hal_displayfeature_xiaomi_default)
 
@@ -17,6 +24,10 @@ allow parts_app system_app_data_file:lnk_file create_file_perms;
 
 # Parts (XiaomiParts touch toggle)
 allow parts_app proc_touch_file:file rw_file_perms;
+
+# Parts (Back light effects, AW21024 RGB LED)
+allow parts_app sysfs_leds_aw21024:dir r_dir_perms;
+allow parts_app sysfs_leds_aw21024:file rw_file_perms;
 
 # Displayfeature
 allow parts_app vendor_hal_displayfeature_service:service_manager find;

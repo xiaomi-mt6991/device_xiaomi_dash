@@ -15,6 +15,7 @@ import android.view.Display;
 import android.view.Display.HdrCapabilities;
 import com.xiaomi.settings.display.ColorService
 import com.xiaomi.settings.touch.TouchReportRateService
+import com.xiaomi.settings.lights.BacklightService
 
 class BootCompletedReceiver : BroadcastReceiver() {
 
@@ -46,6 +47,8 @@ class BootCompletedReceiver : BroadcastReceiver() {
         ColorService.startService(context)
         // Touch
         TouchReportRateService.startService(context)
+        // Back light effects
+        BacklightService.start(context)
     }
 
     companion object {

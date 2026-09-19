@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string-array name="backlight_color_names">
+        <item>@string/backlight_color_white</item>
+        <item>@string/backlight_color_red</item>
+        <item>@string/backlight_color_green</item>
+        <item>@string/backlight_color_blue</item>
+        <item>@string/backlight_color_gold</item>
+        <item>@string/backlight_color_orange</item>
+        <item>@string/backlight_color_cyan</item>
+        <item>@string/backlight_color_magenta</item>
+    </string-array>
+    <string-array name="backlight_color_values">
+        <item>FFFFFF</item>
+        <item>FF0000</item>
+        <item>0AFF10</item>
+        <item>0099EA</item>
+        <item>8F2A00</item>
+        <item>FF9400</item>
+        <item>00FFFF</item>
+        <item>FF00FF</item>
+    </string-array>
+
+    <string-array name="backlight_call_names">
+        <item>@string/backlight_call_off</item>
+        <item>@string/backlight_call_all</item>
+    </string-array>
+    <string-array name="backlight_call_values">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+</resources>

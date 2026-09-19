@@ -20,4 +20,47 @@
     <string name="touch_saver_summary">Drop to 120Hz while battery saver is on. Forced rate returns when saver turns off</string>
     <string name="touch_unavailable_summary">High touch sampling rate is not available on this panel</string>
     <string name="touch_footer">Forced mode applies 240Hz everywhere and is kept across game power-mode changes. When off, high rate applies in games only. The Quick Settings tile mirrors the main switch above.</string>
+
+    <!-- Back light effects -->
+    <string name="backlight_title">Back light effects</string>
+    <string name="backlight_row_summary">Visual notifications and personalized light effects</string>
+    <string name="backlight_intro">Turn this feature on to get visual notifications and personalized light effects</string>
+    <string name="backlight_effects_category">Effects</string>
+    <string name="backlight_call_title">Incoming call reminders</string>
+    <string name="backlight_call_off">Off</string>
+    <string name="backlight_call_all">All calls</string>
+    <string name="backlight_game_title">Game lighting effects</string>
+    <string name="backlight_game_summary">%1$d apps</string>
+    <string name="backlight_game_empty">No games enabled</string>
+    <string name="backlight_music_title">Rhythmic light effects</string>
+    <string name="backlight_music_summary">%1$s</string>
+    <string name="backlight_music_empty">No apps enabled</string>
+    <string name="backlight_notif_title">Notifications</string>
+    <string name="backlight_notif_empty">No apps enabled</string>
+    <string name="backlight_notif_access_title">Notification access</string>
+    <string name="backlight_notif_access_summary">Allow reading notifications to light up for them</string>
+    <string name="backlight_camera_title">Camera status indicator</string>
+    <string name="backlight_camera_summary">Turn on back light when the camera is in use</string>
+    <string name="backlight_additional_category">Additional settings</string>
+    <string name="backlight_color_title">Color</string>
+    <string name="backlight_brightness_title">Brightness</string>
+    <string name="backlight_footer">Effects play on the rear light. Priority order: incoming calls, camera, notifications, games, then music.</string>
+    <string name="backlight_add_app_title">Add app…</string>
+    <string name="backlight_add_app_dialog_title">Pick an app</string>
+    <string name="backlight_remove_app_title">Remove app</string>
+    <string name="backlight_remove_app_message">Stop lighting up for %1$s?</string>
+    <string name="backlight_remove_app_confirm">Remove</string>
+    <string name="backlight_color_white">White</string>
+    <string name="backlight_color_red">Red</string>
+    <string name="backlight_color_green">Green</string>
+    <string name="backlight_color_blue">Blue</string>
+    <string name="backlight_color_gold">Gold</string>
+    <string name="backlight_color_orange">Orange</string>
+    <string name="backlight_color_cyan">Cyan</string>
+    <string name="backlight_color_magenta">Magenta</string>
+    <string name="backlight_game_effect_title">Lighting effect</string>
+    <string name="backlight_game_color_title">Effect color</string>
+    <string name="backlight_effect_steady">Steady</string>
+    <string name="backlight_effect_breath">Breath</string>
+    <string name="backlight_effect_blink">Blink</string>
 </resources>
