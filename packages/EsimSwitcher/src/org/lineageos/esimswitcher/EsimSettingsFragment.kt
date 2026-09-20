@@ -35,8 +35,11 @@ class EsimSettingsFragment :
         footerPref.title = getString(R.string.esim_footer_note)
 
         Thread {
-            val enabled = esimController.getEsimEnabled()
-            requireActivity().runOnUiThread {
+            val enabled = runCatching { esimController.getEsimEnabled() }.getOrDefault(false)
+            val activity = activity ?: return@Thread
+            if (!isAdded) return@Thread
+            activity.runOnUiThread {
+                if (!isAdded) return@runOnUiThread
                 switchBar.isChecked = enabled
                 switchBar.isEnabled = true
             }

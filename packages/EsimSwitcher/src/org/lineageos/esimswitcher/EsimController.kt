@@ -36,16 +36,25 @@ class EsimController private constructor(private val context: Context) {
     }
 
     fun getEsimEnabled(): Boolean {
-        SystemProperties.set("ctl.start", "vendor.esim_state")
+        runCatching { SystemProperties.set("ctl.start", "vendor.esim_state") }
+            .onFailure { e ->
+                Log.w(TAG, "ctl.start vendor.esim_state failed", e)
+                return false
+            }
 
         val start = System.currentTimeMillis()
         while (System.currentTimeMillis() - start < STATE_TIMEOUT_MS) {
-            val state = SystemProperties.get("sys.esim.state", "")
+            val state = runCatching { SystemProperties.get("sys.esim.state", "") }.getOrDefault("")
             if (state.isNotEmpty()) {
                 Log.i(TAG, "getEsimEnabled state: $state")
                 return state == "enabled"
             }
-            Thread.sleep(100)
+            try {
+                Thread.sleep(100)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
         }
         Log.e(TAG, "getEsimEnabled: timeout")
         return false

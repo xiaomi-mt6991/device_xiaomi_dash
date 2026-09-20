@@ -21,22 +21,35 @@ class BootCompletedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(TAG, "Received boot completed intent: ${intent.action}")
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val hasNonRemovableEuicc =
-                context.resources
-                    .getIntArray(com.android.internal.R.array.non_removable_euicc_slots)
-                    .isNotEmpty()
-            Log.i(TAG, "eSIM supported: $hasNonRemovableEuicc")
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
+            intent.action != Intent.ACTION_LOCKED_BOOT_COMPLETED
+        ) {
+            return
+        }
+        // Internal resource may be missing on some framework builds.
+        // On failure keep the current component state instead of guessing,
+        // so a non-eUICC device never gets a working modem toggle and a
+        // real eSIM device never loses it.
+        val slots =
+            runCatching {
+                context.resources.getIntArray(
+                    com.android.internal.R.array.non_removable_euicc_slots,
+                )
+            }.onFailure { e ->
+                Log.w(TAG, "non_removable_euicc_slots unavailable, keeping state", e)
+                return
+            }.getOrNull() ?: return
+        val hasNonRemovableEuicc = slots.isNotEmpty()
+        Log.i(TAG, "eSIM supported: $hasNonRemovableEuicc")
 
-            setComponentEnabled(
-                context,
-                EsimSettingsActivity::class.java.name,
-                hasNonRemovableEuicc,
-            )
+        setComponentEnabled(
+            context,
+            EsimSettingsActivity::class.java.name,
+            hasNonRemovableEuicc,
+        )
 
-            if (hasNonRemovableEuicc) {
-                EsimController.getInstance(context).onBootCompleted()
-            }
+        if (hasNonRemovableEuicc) {
+            EsimController.getInstance(context).onBootCompleted()
         }
     }
 
