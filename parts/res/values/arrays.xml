@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Charging state effect mode -->
+    <string-array name="charging_mode_entries">
+        <item>Battery level</item>
+        <item>Custom color</item>
+    </string-array>
+
+    <string-array name="charging_mode_values">
+        <item>level</item>
+        <item>custom</item>
+    </string-array>
+</resources>

@@ -1,2 +1,7 @@
 # Touch
 type proc_touch_file, fs_type, proc_type;
+
+# Back light effects (AW21024 RGB LED). Defined here (system_ext public)
+# so both system_ext policy (parts_app) and vendor policy
+# (file_contexts labeling) can see it.
+type sysfs_leds_aw21024, fs_type, sysfs_type;

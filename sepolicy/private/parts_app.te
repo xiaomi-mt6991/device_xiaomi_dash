@@ -22,7 +22,27 @@ allow parts_app proc_touch_file:file rw_file_perms;
 allow parts_app hal_touchfeature_xiaomi_service:service_manager find;
 binder_call(parts_app, hal_touchfeature_xiaomi_default)
 
+# Parts (Back light effects, AW21024 RGB LED)
+allow parts_app sysfs_leds_aw21024:dir search;
+allow parts_app sysfs_leds_aw21024:file rw_file_perms;
+allow parts_app sysfs_leds_aw21024:lnk_file rw_file_perms;
+# Traverse /sys/class/leds parent for the aw21024_led symlink.
+allow parts_app sysfs_leds:dir search;
+
 # Displayfeature
 allow parts_app vendor_hal_displayfeature_service:service_manager find;
 binder_call(parts_app, vendor_hal_displayfeature_default)
+
+# Parts (Back light effects, camera status indicator: CameraManager
+# availability callbacks need the camera service; the trimmed base
+# app_domain does not grant it, so allow explicitly like every app)
+allow parts_app cameraserver_service:service_manager find;
+binder_call(parts_app, cameraserver)
+
+# Parts (Back light effects: the trimmed base app_domain is also
+# missing these everyday finds — media sessions for rhythmic effects,
+# audio flinger for the Visualizer, phone for call state)
+allow parts_app media_session_service:service_manager find;
+allow parts_app audioserver_service:service_manager find;
+allow parts_app radio_service:service_manager find;
 

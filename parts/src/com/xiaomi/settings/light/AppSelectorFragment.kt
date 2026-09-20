@@ -1,0 +1,79 @@
+/*
+ * SPDX-FileCopyrightText: The LineageOS Project
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package com.xiaomi.settings.light
+
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.os.Bundle
+import androidx.preference.PreferenceManager
+import androidx.preference.PreferenceScreen
+import androidx.preference.SwitchPreferenceCompat
+import com.android.settingslib.widget.SettingsBasePreferenceFragment
+import java.util.HashSet
+
+class AppSelectorFragment : SettingsBasePreferenceFragment() {
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        val screen = preferenceManager.createPreferenceScreen(requireContext())
+        preferenceScreen = screen
+        loadApps(screen)
+    }
+
+    private fun loadApps(screen: PreferenceScreen) {
+        val packageManager = requireContext().packageManager
+        val installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        val autoApps = savedAutoApps
+
+        val sortedApps = installedApps.filter { appInfo ->
+            appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0 &&
+                appInfo.packageName != requireContext().packageName
+        }.sortedWith(
+            compareByDescending<ApplicationInfo> { autoApps.contains(it.packageName) }
+                .thenBy { it.loadLabel(packageManager).toString().lowercase() },
+        )
+
+        for (appInfo in sortedApps) {
+            val pref = SwitchPreferenceCompat(requireContext()).apply {
+                title = appInfo.loadLabel(packageManager)
+                summary = appInfo.packageName
+                icon = appInfo.loadIcon(packageManager)
+                isChecked = autoApps.contains(appInfo.packageName)
+                isPersistent = false
+                setOnPreferenceChangeListener { _, newValue ->
+                    val isEnabled = newValue as Boolean
+                    updateAutoApp(appInfo.packageName, isEnabled)
+                    true
+                }
+            }
+            screen.addPreference(pref)
+        }
+    }
+
+    private val savedAutoApps: Set<String>
+        get() {
+            val prefKey = arguments?.getString("prefKey") ?: PREF_AUTO_APPS
+            return PreferenceManager.getDefaultSharedPreferences(requireContext())
+                .getStringSet(prefKey, HashSet()) ?: HashSet()
+        }
+
+    private fun updateAutoApp(packageName: String, add: Boolean) {
+        val prefKey = arguments?.getString("prefKey") ?: PREF_AUTO_APPS
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val currentSet = prefs.getStringSet(prefKey, HashSet()) ?: HashSet()
+
+        val newSet = HashSet(currentSet)
+        if (add) {
+            newSet.add(packageName)
+        } else {
+            newSet.remove(packageName)
+        }
+        prefs.edit().putStringSet(prefKey, newSet).apply()
+    }
+
+    companion object {
+        const val PREF_AUTO_APPS = "light_notifications_apps"
+    }
+}

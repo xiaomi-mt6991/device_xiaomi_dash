@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res-auto"
+    android:title="@string/light_settings_title">
+
+    <com.xiaomi.settings.light.HeroPreference
+        android:key="light_hero" />
+
+    <com.android.settingslib.widget.MainSwitchPreference
+        android:key="light_enable"
+        android:title="@string/light_enable_title"
+        android:defaultValue="false" />
+
+    <PreferenceCategory
+        android:key="light_category_controls"
+        android:title="@string/led_controls_title"
+        android:dependency="light_enable">
+        <androidx.preference.SeekBarPreference
+            android:key="light_brightness"
+            android:title="@string/led_brightness_control_title"
+            android:max="100"
+            android:defaultValue="100" />
+        <androidx.preference.SeekBarPreference
+            android:key="light_gradient_speed"
+            android:title="@string/led_gradient_speed_title"
+            android:max="100"
+            android:min="1"
+            android:defaultValue="50" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_standalone"
+        android:title="@string/light_standalone_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_standalone_enable"
+            android:title="@string/light_standalone_enable_title"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_standalone_color"
+            android:title="@string/light_standalone_color_title"
+            android:dependency="light_standalone_enable"
+            android:defaultValue="ff0000" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_charging"
+        android:title="@string/light_charging_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_charging_enable"
+            android:title="@string/light_charging_title"
+            android:summary="@string/light_charging_summary"
+            android:defaultValue="false" />
+        <ListPreference
+            android:key="light_charging_mode"
+            android:title="@string/light_charging_mode_title"
+            android:entries="@array/charging_mode_entries"
+            android:entryValues="@array/charging_mode_values"
+            android:dependency="light_charging_enable"
+            android:defaultValue="level" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_charging_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_charging_enable"
+            android:defaultValue="00ff00" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_incoming_call"
+        android:title="@string/light_incoming_call_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_incoming_call_enable"
+            android:title="@string/light_incoming_call_title"
+            android:summary="@string/light_incoming_call_summary"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_incoming_call_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_incoming_call_enable"
+            android:defaultValue="ff0000" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_camera"
+        android:title="@string/light_camera_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_camera_enable"
+            android:title="@string/light_camera_title"
+            android:summary="@string/light_camera_summary"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_camera_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_camera_enable"
+            android:defaultValue="00ff00" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_notifications"
+        android:title="@string/light_notifications_title"
+        android:dependency="light_enable">
+        <Preference
+            android:key="light_notif_access"
+            android:title="@string/light_notif_access_title"
+            android:summary="@string/light_notif_access_summary" />
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_notifications_enable"
+            android:title="@string/light_notifications_title"
+            android:summary="@string/light_notifications_summary"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_notifications_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_notifications_enable"
+            android:defaultValue="ff0000" />
+        <Preference
+            android:key="light_notifications_apps"
+            android:title="@string/light_notifications_apps_title"
+            android:dependency="light_notifications_enable" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_dynamic_notifications"
+        android:title="@string/light_dynamic_notifications_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_dynamic_notifications_enable"
+            android:title="@string/light_dynamic_notifications_title"
+            android:summary="@string/light_dynamic_notifications_summary"
+            android:defaultValue="false" />
+        <Preference
+            android:key="light_dynamic_notifications_apps"
+            android:title="@string/light_dynamic_notifications_apps_title"
+            android:dependency="light_dynamic_notifications_enable" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_music"
+        android:title="@string/light_music_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_music_enable"
+            android:title="@string/light_music_title"
+            android:summary="@string/light_music_summary"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_music_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_music_enable"
+            android:defaultValue="gradient" />
+        <Preference
+            android:key="light_music_apps"
+            android:title="@string/light_music_apps_title"
+            android:dependency="light_music_enable" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="light_category_game_mode"
+        android:title="@string/light_game_mode_title"
+        android:dependency="light_enable">
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="light_game_mode_enable"
+            android:title="@string/light_game_mode_title"
+            android:summary="@string/light_game_mode_summary"
+            android:defaultValue="false" />
+        <com.xiaomi.settings.light.LedColorPreference
+            android:key="light_game_mode_color"
+            android:title="@string/led_color_title"
+            android:dependency="light_game_mode_enable"
+            android:defaultValue="gradient" />
+        <Preference
+            android:key="light_game_mode_apps"
+            android:title="@string/light_game_mode_apps_title"
+            android:dependency="light_game_mode_enable" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

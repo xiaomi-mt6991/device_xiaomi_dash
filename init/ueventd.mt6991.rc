@@ -217,6 +217,17 @@
 /sys/devices/platform/leds-mt65xx/leds/blue   delay_on      0664  system   system
 /sys/devices/platform/leds-mt65xx/leds/blue   delay_off      0664  system   system
 
+# AW21024 RGB LED (Back Light Effects): parts_app runs as system and
+# drives these nodes; without ownership they stay root-only and every
+# write fails with EACCES before sepolicy is even consulted.
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   hwen       0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   run        0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   repeat     0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   period     0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   brightness 0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   rgbcolor   0664  system   system
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led   gradient   0664  system   system
+
 #GPIO
 /dev/mtgpio               0600   radio      root
 
