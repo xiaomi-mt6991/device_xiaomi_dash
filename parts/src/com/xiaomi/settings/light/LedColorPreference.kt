@@ -55,9 +55,9 @@ class LedColorPreference @JvmOverloads constructor(
 
     private fun swatch(hex: String, selected: Boolean): View =
         View(context).apply {
-            val size = dp(40)
+            val size = dp(SWATCH_DP)
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                marginEnd = dp(10)
+                marginEnd = dp(SWATCH_GAP_DP)
             }
             background = circle(hex, selected)
             contentDescription = hex
@@ -95,6 +95,10 @@ class LedColorPreference @JvmOverloads constructor(
 
     companion object {
         const val VALUE_GRADIENT = "gradient"
+
+        /** 9 across with room to spare: no hidden overflow, no scroll hunt. */
+        private const val SWATCH_DP = 30
+        private const val SWATCH_GAP_DP = 8
 
         /** Single palette for every section: colors, white, rainbow last. */
         val PALETTE = listOf(

@@ -7,6 +7,12 @@
     <!-- App Name -->
     <string name="app_name">Xiaomi Parts</string>
 
+    <!-- Display -->
+    <string name="display_settings_title">Picture adjustment</string>
+    <string name="display_settings_summary">Display color tuning</string>
+    <string name="display_saturation_title">Saturation</string>
+    <string name="display_saturation_reset_title">Reset to default</string>
+
     <!-- Touch settings -->
     <string name="touch_title">High Touch Sampling Rate</string>
     <string name="touch_row_summary">Force 240Hz everywhere. When off, high rate applies in games only</string>

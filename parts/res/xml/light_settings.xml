@@ -16,12 +16,12 @@
         android:key="light_category_controls"
         android:title="@string/led_controls_title"
         android:dependency="light_enable">
-        <androidx.preference.SeekBarPreference
+        <com.xiaomi.settings.widget.TickSeekBarPreference
             android:key="light_brightness"
             android:title="@string/led_brightness_control_title"
             android:max="100"
             android:defaultValue="100" />
-        <androidx.preference.SeekBarPreference
+        <com.xiaomi.settings.widget.TickSeekBarPreference
             android:key="light_gradient_speed"
             android:title="@string/led_gradient_speed_title"
             android:max="100"

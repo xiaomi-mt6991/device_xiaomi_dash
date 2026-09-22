@@ -3,6 +3,7 @@ package com.xiaomi.settings.light
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
+import android.view.View
 import android.widget.ImageView
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
@@ -28,16 +29,20 @@ class HeroPreference @JvmOverloads constructor(
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
+        // Never toggle isVisible here: adapter changes during layout
+        // crash RecyclerView. Collapse the row view itself instead.
         val image = holder.findViewById(R.id.hero_image) as? ImageView
         if (image == null) {
-            Log.w(TAG, "hero_image view missing, hiding row")
-            isVisible = false
+            Log.w(TAG, "hero_image view missing, collapsing row")
+            holder.itemView.visibility = View.GONE
             return
         }
         image.setImageResource(R.drawable.image_back_strap)
         if (image.drawable == null) {
-            Log.w(TAG, "image_back_strap failed to resolve, hiding row")
-            isVisible = false
+            Log.w(TAG, "image_back_strap failed to resolve, collapsing row")
+            holder.itemView.visibility = View.GONE
+        } else {
+            holder.itemView.visibility = View.VISIBLE
         }
     }
 

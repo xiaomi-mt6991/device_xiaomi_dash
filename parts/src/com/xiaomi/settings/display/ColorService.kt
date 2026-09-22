@@ -63,7 +63,7 @@ class ColorService : Service() {
                         isDozing = true
                         handler.removeCallbacksAndMessages(null)
                         if (DEBUG) Log.d(TAG, "Entered AOD, set color mode to standard")
-                        ColorMode.STANDARD.setCurrent()
+                        ColorMode.STANDARD.setCurrentWithSaturation(context)
                     }
                 }
             }
@@ -95,6 +95,7 @@ class ColorService : Service() {
 
     override fun onDestroy() {
         if (DEBUG) Log.d(TAG, "onDestroy")
+        ColorMode.cancelRestore()
         contentResolver.unregisterContentObserver(settingObserver)
         unregisterReceiver(screenStateReceiver)
         super.onDestroy()
@@ -121,7 +122,7 @@ class ColorService : Service() {
                     return
                 }
         if (DEBUG) Log.d(TAG, "setCurrentColorMode: $mode")
-        mode.setCurrent()
+        mode.setCurrentWithSaturation(this)
     }
 
     enum class ColorMode(
@@ -146,10 +147,35 @@ class ColorService : Service() {
             }
         }
 
+        /**
+         * Apply [ColorMode] and re-assert the saturation slider on top.
+         * SurfaceFlinger's setColorMode path snaps global saturation back
+         * to its baked NATURAL/BOOSTED value, so without this any mode
+         * (re)application silently eats a custom saturation. The delayed
+         * pass wins the race against the system's own re-apply, which can
+         * land after ours from the same setting change.
+         */
+        fun setCurrentWithSaturation(context: Context) {
+            setCurrent()
+            DisplaySaturation.apply(context)
+            saturationRestoreHandler.removeCallbacksAndMessages(null)
+            saturationRestoreHandler.postDelayed(
+                { DisplaySaturation.apply(context) },
+                SATURATION_RESTORE_DELAY_MS,
+            )
+        }
+
         companion object {
             private const val EXPERT_MODE = 26
             private const val EXPERT_VALUE = 0
             private const val EXPERT_COOKIE = 10
+            private const val SATURATION_RESTORE_DELAY_MS = 500L
+
+            private val saturationRestoreHandler = Handler(Looper.getMainLooper())
+
+            fun cancelRestore() {
+                saturationRestoreHandler.removeCallbacksAndMessages(null)
+            }
 
             fun fromId(id: Int): ColorMode? {
                 return values().find { it.id == id }

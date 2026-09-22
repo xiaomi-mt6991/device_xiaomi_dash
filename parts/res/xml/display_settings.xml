@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res-auto"
+    android:title="@string/display_settings_title">
+
+    <com.xiaomi.settings.widget.TickSeekBarPreference
+        android:key="display_saturation"
+        android:title="@string/display_saturation_title"
+        android:max="150"
+        android:defaultValue="100" />
+
+    <Preference
+        android:key="display_saturation_reset"
+        android:title="@string/display_saturation_reset_title" />
+
+</PreferenceScreen>

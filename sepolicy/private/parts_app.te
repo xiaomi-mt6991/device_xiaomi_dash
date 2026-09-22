@@ -33,6 +33,10 @@ allow parts_app sysfs_leds:dir search;
 allow parts_app vendor_hal_displayfeature_service:service_manager find;
 binder_call(parts_app, vendor_hal_displayfeature_default)
 
+# Parts (Display saturation slider drives the global SurfaceFlinger
+# saturation transform via the color_display service)
+allow parts_app color_display_service:service_manager find;
+
 # Parts (Back light effects, camera status indicator: CameraManager
 # availability callbacks need the camera service; the trimmed base
 # app_domain does not grant it, so allow explicitly like every app)
