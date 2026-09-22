@@ -29,8 +29,8 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.xiaomi.settings.touch.GameState
-import java.util.HashSet
 import java.util.concurrent.Executor
+import kotlin.math.sqrt
 
 /**
  * Back light effects service (AW21024 RGB LED).
@@ -92,7 +92,6 @@ class LightService : Service() {
     private var visualizer: Visualizer? = null
     private var isVisualizerActive = false
 
-    private var powerManager: PowerManager? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -133,6 +132,7 @@ class LightService : Service() {
             "light_music_apps",
             "light_music_color",
             "light_game_mode_color",
+            "light_game_mode_apps",
             "light_charging_color",
             "light_charging_mode",
             "light_gradient_speed",
@@ -140,6 +140,12 @@ class LightService : Service() {
                 Log.i(TAG, "Preference changed: $key")
                 if (key == "light_music_enable" || key == "light_music_apps") {
                     checkMusicState()
+                }
+                // Game list/enable edits apply now instead of waiting for
+                // the next 2s tick; the flag must be fresh before the
+                // updateLedState posted below runs.
+                if (key == "light_game_mode_apps" || key == "light_game_mode_enable") {
+                    ledHandler?.post { refreshGameState() }
                 }
                 postUpdateLedState()
             }
@@ -212,15 +218,34 @@ class LightService : Service() {
 
             val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-            batteryPct = if (level >= 0 && scale > 0) level * 100 / scale.toFloat() else -1f
+            val pct = if (level >= 0 && scale > 0) level * 100 / scale.toFloat() else -1f
 
+            // Battery broadcasts fire on every level/temperature shift;
+            // skip the full re-eval unless charging flipped or the level
+            // crossed a charging-color band (25-wide).
+            if (isCurrentlyCharging == isCharging && pctBand(pct) == pctBand(batteryPct)) {
+                batteryPct = pct
+                return
+            }
             if (isCharging != isCurrentlyCharging) {
                 Log.i(TAG, "Battery state changed: charging=$isCurrentlyCharging")
             }
 
             isCharging = isCurrentlyCharging
+            batteryPct = pct
             postUpdateLedState()
         }
+
+        private fun pctBand(pct: Float): Int =
+            // Mirrors the charging-color bands in updateLedState exactly
+            // (<= boundaries), so a band change always re-evaluates.
+            when {
+                pct < 0 -> -1
+                pct <= 25 -> 0
+                pct <= 50 -> 1
+                pct <= 75 -> 2
+                else -> 3
+            }
     }
 
     private val mediaControllerCallback = object : MediaController.Callback() {
@@ -251,6 +276,15 @@ class LightService : Service() {
     }
 
     private fun checkMusicState() {
+        checkMusicState(GameState.focusedPackage(this))
+    }
+
+    /**
+     * @param foreground pre-resolved focused package, or null to look it
+     * up. The periodic poller passes its own lookup so a tick costs one
+     * `getTasks` binder call instead of two.
+     */
+    private fun checkMusicState(foreground: String?) {
         val musicEnabled = sharedPreferences.getBoolean("light_music_enable", false)
         if (!musicEnabled) {
             if (isMusicActive) {
@@ -261,7 +295,7 @@ class LightService : Service() {
             return
         }
 
-        val musicApps = sharedPreferences.getStringSet("light_music_apps", HashSet()) ?: HashSet()
+        val musicApps = sharedPreferences.getStringSet("light_music_apps", emptySet<String>()) ?: emptySet()
 
         var controllerPlaying = false
         try {
@@ -285,8 +319,8 @@ class LightService : Service() {
         if (!controllerPlaying && activeMediaControllers.isEmpty() &&
             audioManager?.isMusicActive == true
         ) {
-            val foreground = GameState.focusedPackage(this)
-            fallbackPlaying = foreground != null && musicApps.contains(foreground)
+            val fg = foreground ?: GameState.focusedPackage(this)
+            fallbackPlaying = fg != null && musicApps.contains(fg)
         }
 
         val playing = controllerPlaying || fallbackPlaying
@@ -295,6 +329,43 @@ class LightService : Service() {
             isMusicActive = playing
             postUpdateLedState()
         }
+    }
+
+    /**
+     * One-shot registrations can fail when a binder isn't published yet
+     * (locked boot) or is selinux-blocked. These return whether the
+     * callback stuck; the periodic runnable retries until each does.
+     * Verbose failure logs live only in the onCreate pass; retries stay
+     * silent to avoid a 2s warning loop.
+     */
+    private fun tryRegisterTelephony(verbose: Boolean = false): Boolean {
+        if (telephonyManager == null) telephonyManager = getSystemService(TelephonyManager::class.java)
+        return runCatching {
+            telephonyManager?.registerTelephonyCallback(mainExecutor, telephonyCallback)
+                ?: throw IllegalStateException("telephony service not published yet")
+        }.onFailure { e ->
+            if (verbose) Log.w(TAG, "Failed to register telephony callback", e)
+        }.isSuccess
+    }
+
+    private fun tryRegisterCamera(verbose: Boolean = false): Boolean {
+        if (cameraManager == null) cameraManager = getSystemService(CameraManager::class.java)
+        return runCatching {
+            cameraManager?.registerAvailabilityCallback(mainExecutor, cameraCallback)
+                ?: throw IllegalStateException("camera service not published yet")
+        }.onFailure { e ->
+            if (verbose) Log.w(TAG, "Failed to register camera callback", e)
+        }.isSuccess
+    }
+
+    private fun tryWatchCameraOps(verbose: Boolean = false): Boolean {
+        if (appOpsManager == null) appOpsManager = getSystemService(AppOpsManager::class.java)
+        return runCatching {
+            (appOpsManager ?: throw IllegalStateException("appops not published yet"))
+                .startWatchingActive(intArrayOf(AppOpsManager.OP_CAMERA), cameraOpListener)
+        }.onFailure { e ->
+            if (verbose) Log.w(TAG, "Failed to watch camera appops", e)
+        }.isSuccess
     }
 
     private fun postUpdateLedState() {
@@ -310,23 +381,13 @@ class LightService : Service() {
         telephonyManager = getSystemService(TelephonyManager::class.java)
         audioManager = getSystemService(AudioManager::class.java)
         cameraManager = getSystemService(CameraManager::class.java)
-        powerManager = getSystemService(PowerManager::class.java)
         mediaSessionManager = getSystemService(MediaSessionManager::class.java)
-        wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LightService:NotificationPulse")
+        wakeLock = getSystemService(PowerManager::class.java)
+            ?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LightService:NotificationPulse")
 
-        telephonyRegistered = runCatching {
-            telephonyManager?.registerTelephonyCallback(mainExecutor, telephonyCallback)
-                ?: throw IllegalStateException("telephony service not published yet")
-        }.onFailure { e -> Log.w(TAG, "Failed to register telephony callback", e) }.isSuccess
-        cameraRegistered = runCatching {
-            cameraManager?.registerAvailabilityCallback(mainExecutor, cameraCallback)
-                ?: throw IllegalStateException("camera service not published yet")
-        }.onFailure { e -> Log.w(TAG, "Failed to register camera callback", e) }.isSuccess
-        appOpsManager = getSystemService(AppOpsManager::class.java)
-        cameraOpWatching = runCatching {
-            (appOpsManager ?: throw IllegalStateException("appops not published yet"))
-                .startWatchingActive(intArrayOf(AppOpsManager.OP_CAMERA), cameraOpListener)
-        }.onFailure { e -> Log.w(TAG, "Failed to watch camera appops", e) }.isSuccess
+        telephonyRegistered = tryRegisterTelephony(verbose = true)
+        cameraRegistered = tryRegisterCamera(verbose = true)
+        cameraOpWatching = tryWatchCameraOps(verbose = true)
 
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -408,36 +469,54 @@ class LightService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Game-mode flag re-eval (no foreground lookup of its own) used by
+     * the poller, which already resolved the focused package.
+     * @return true when the flag changed
+     */
+    private fun refreshGameState(gameEnabled: Boolean, foreground: String?): Boolean {
+        if (gameEnabled) {
+            val gameApps = sharedPreferences.getStringSet("light_game_mode_apps", emptySet<String>()) ?: emptySet()
+            val currentlyInGame = foreground != null && gameApps.contains(foreground)
+            if (currentlyInGame != isGameModeActive) {
+                Log.i(TAG, "Game mode active changed from $isGameModeActive to $currentlyInGame")
+                isGameModeActive = currentlyInGame
+                return true
+            }
+        } else if (isGameModeActive) {
+            Log.i(TAG, "Game mode disabled, disabling game mode state")
+            isGameModeActive = false
+            return true
+        }
+        return false
+    }
+
+    /** Self-resolving variant: called from pref edits for instant apply. */
+    private fun refreshGameState() {
+        val gameEnabled = sharedPreferences.getBoolean("light_game_mode_enable", false)
+        val foreground =
+            if (gameEnabled) GameState.focusedPackage(this) else null
+        refreshGameState(gameEnabled, foreground)
+    }
+
     private val backgroundStateRunnable = object : Runnable {
         override fun run() {
             if (!isServiceRunning) return
 
             var stateChanged = false
 
-            // Late registration retries (see fields): one-shot onCreate
+            // Late registration retries (see helpers): one-shot onCreate
             // registration can fail on locked boot; retry until each sticks.
             if (!telephonyRegistered) {
-                if (telephonyManager == null) telephonyManager = getSystemService(TelephonyManager::class.java)
-                telephonyRegistered = runCatching {
-                    telephonyManager?.registerTelephonyCallback(mainExecutor, telephonyCallback)
-                        ?: throw IllegalStateException("telephony service not published yet")
-                }.isSuccess
+                telephonyRegistered = tryRegisterTelephony()
                 if (telephonyRegistered) Log.i(TAG, "Telephony callback late-registered")
             }
             if (!cameraRegistered) {
-                if (cameraManager == null) cameraManager = getSystemService(CameraManager::class.java)
-                cameraRegistered = runCatching {
-                    cameraManager?.registerAvailabilityCallback(mainExecutor, cameraCallback)
-                        ?: throw IllegalStateException("camera service not published yet")
-                }.isSuccess
+                cameraRegistered = tryRegisterCamera()
                 if (cameraRegistered) Log.i(TAG, "Camera callback late-registered")
             }
             if (!cameraOpWatching) {
-                if (appOpsManager == null) appOpsManager = getSystemService(AppOpsManager::class.java)
-                cameraOpWatching = runCatching {
-                    (appOpsManager ?: throw IllegalStateException("appops not published yet"))
-                        .startWatchingActive(intArrayOf(AppOpsManager.OP_CAMERA), cameraOpListener)
-                }.isSuccess
+                cameraOpWatching = tryWatchCameraOps()
                 if (cameraOpWatching) Log.i(TAG, "Camera appops late-watching")
             }
 
@@ -451,22 +530,19 @@ class LightService : Service() {
                 stateChanged = true
             }
 
-            // Check Game Mode
+            // Check Game Mode. The focused package is resolved once per
+            // tick and shared with the music check below — but only when
+            // something actually needs it (game on, or music on with live
+            // audio for the fallback).
             val gameEnabled = sharedPreferences.getBoolean("light_game_mode_enable", false)
-            if (gameEnabled) {
-                val foreground = GameState.focusedPackage(this@LightService)
-                val gameApps = sharedPreferences.getStringSet("light_game_mode_apps", HashSet()) ?: HashSet()
-                val currentlyInGame = foreground != null && gameApps.contains(foreground)
-                if (currentlyInGame != isGameModeActive) {
-                    Log.i(TAG, "Game mode active changed from $isGameModeActive to $currentlyInGame")
-                    isGameModeActive = currentlyInGame
-                    stateChanged = true
+            val musicEnabled = sharedPreferences.getBoolean("light_music_enable", false)
+            val foreground =
+                if (gameEnabled || (musicEnabled && audioManager?.isMusicActive == true)) {
+                    GameState.focusedPackage(this@LightService)
+                } else {
+                    null
                 }
-            } else if (isGameModeActive) {
-                Log.i(TAG, "Game mode disabled, disabling game mode state")
-                isGameModeActive = false
-                stateChanged = true
-            }
+            if (refreshGameState(gameEnabled, foreground)) stateChanged = true
 
             // Late retry: if the session binder wasn't published at onCreate
             // (locked-boot ordering) the listener never registered. Re-try
@@ -485,7 +561,7 @@ class LightService : Service() {
 
             // Music state (controllers or audio fallback, both directions).
             // Self-posts an LED update on change, so no stateChanged here.
-            checkMusicState()
+            checkMusicState(foreground)
 
             if (stateChanged) {
                 updateLedState() // since this runnable runs on ledHandler
@@ -509,6 +585,42 @@ class LightService : Service() {
     @Volatile private var beatUseGameColor = false
     @Volatile private var beatGameColorHex = "gradient"
 
+    // Latest capture state handed to the visualizer thread. One
+    // pre-allocated runnable is reused (the old shape allocated a fresh
+    // lambda + captures on every FFT callback) and the pending flag
+    // coalesces bursts into a single post — the same at-most-one-queued
+    // behavior the old removeCallbacksAndMessages gave us.
+    @Volatile private var pendingOnset = false
+    @Volatile private var pendingBrightness = 0
+    @Volatile private var vizPending = false
+
+    private val vizUpdate = Runnable {
+        vizPending = false
+        val onset = pendingOnset
+        val brightness = pendingBrightness
+        LedManager.setVisualizerActive()
+        // Hue follows beats, not a timer: color steps only on onsets
+        // (musical), at most ~7Hz. Clock and prefs stay out of the hot
+        // path otherwise.
+        if (onset) {
+            val now = System.currentTimeMillis()
+            if (now - lastColorChangeTime > 150) {
+                val beatPref = if (beatUseGameColor) beatGameColorHex
+                else sharedPreferences.getString("light_music_color", "gradient")
+                    ?: "gradient"
+                val beatColor =
+                    if (beatPref == "gradient") availableColors.random()
+                    else beatPref
+                if (beatColor != lastBeatColorHex) {
+                    LedManager.setVisualizerColor(beatColor)
+                    lastBeatColorHex = beatColor
+                }
+                lastColorChangeTime = now
+            }
+        }
+        LedManager.setVisualizerBrightness(brightness)
+    }
+
     private fun startVisualizer() {
         if (isVisualizerActive) return
         Log.i(TAG, "startVisualizer")
@@ -530,7 +642,9 @@ class LightService : Service() {
                     val bassBins = minOf(8, bins)
                     var bassSum = 0f
                     for (i in 0 until bassBins) {
-                        bassSum += Math.hypot(fft[i * 2].toDouble(), fft[i * 2 + 1].toDouble()).toFloat()
+                        val re = fft[i * 2].toFloat()
+                        val im = fft[i * 2 + 1].toFloat()
+                        bassSum += sqrt(re * re + im * im)
                     }
                     val bass = if (bassBins > 0) bassSum / bassBins else 0f
 
@@ -544,26 +658,12 @@ class LightService : Service() {
                     smoothLevel += (target - smoothLevel) * (if (target > smoothLevel) ATTACK else RELEASE)
                     val brightness = if (onset) 80 else smoothLevel.toInt()
 
-                    visualizerHandler?.removeCallbacksAndMessages(null)
-                    visualizerHandler?.post {
-                        LedManager.setVisualizerActive()
-                        // Hue follows beats, not a timer: color steps only
-                        // on onsets (musical), at most ~7Hz.
-                        val now = System.currentTimeMillis()
-                        if (onset && now - lastColorChangeTime > 150) {
-                            val beatPref = if (beatUseGameColor) beatGameColorHex
-                            else sharedPreferences.getString("light_music_color", "gradient") ?: "gradient"
-                            val beatColor =
-                                if (beatPref == "gradient") availableColors.random()
-                                else beatPref
-                            if (beatColor != lastBeatColorHex) {
-                                LedManager.setVisualizerColor(beatColor)
-                                lastBeatColorHex = beatColor
-                            }
-                            lastColorChangeTime = now
-                        }
-
-                        LedManager.setVisualizerBrightness(brightness)
+                    pendingOnset = onset
+                    pendingBrightness = brightness
+                    val vh = visualizerHandler
+                    if (vh != null && !vizPending) {
+                        vizPending = true
+                        vh.post(vizUpdate)
                     }
                 }
             }, Visualizer.getMaxCaptureRate() / 2, false, true)
@@ -578,6 +678,10 @@ class LightService : Service() {
     private fun stopVisualizer() {
         if (!isVisualizerActive) return
         Log.i(TAG, "stopVisualizer")
+        // Drop any queued vizUpdate: it would re-power the LEDs through
+        // setVisualizerActive right after we turned everything off.
+        visualizerHandler?.removeCallbacks(vizUpdate)
+        vizPending = false
         try {
             visualizer?.enabled = false
             visualizer?.release()
@@ -593,10 +697,21 @@ class LightService : Service() {
         LedManager.turnOff()
     }
 
+    /**
+     * Shared gradient-vs-solid dispatch: "gradient" runs the hue sweep,
+     * anything else calls the solid effect. Keeps the six priority
+     * branches below from duplicating it.
+     */
+    private fun applyEffectColor(key: String, default: String, solid: (String) -> Unit) {
+        val color = sharedPreferences.getString(key, default) ?: default
+        if (color == "gradient") LedManager.setGradientSweep(true)
+        else solid(color)
+    }
+
     private fun updateLedState() {
         val masterEnabled = sharedPreferences.getBoolean("light_enable", false)
         if (!masterEnabled) {
-            Log.i(TAG, "updateLedState: Master toggle disabled, stopping all effects")
+            Log.d(TAG, "updateLedState: Master toggle disabled, stopping all effects")
             stopAllEffects()
             return
         }
@@ -608,11 +723,11 @@ class LightService : Service() {
         if (isRinging) {
             val callEnabled = sharedPreferences.getBoolean("light_incoming_call_enable", false)
             if (callEnabled) {
-                Log.i(TAG, "updateLedState: Incoming call priority")
+                Log.d(TAG, "updateLedState: Incoming call priority")
                 stopAllEffects()
-                val color = sharedPreferences.getString("light_incoming_call_color", "ff0000") ?: "ff0000"
-                if (color == "gradient") LedManager.setGradientSweep(true)
-                else LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
+                applyEffectColor("light_incoming_call_color", "ff0000") { color ->
+                    LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
+                }
                 return
             }
         }
@@ -621,11 +736,9 @@ class LightService : Service() {
         if (isCameraActive) {
             val cameraEnabled = sharedPreferences.getBoolean("light_camera_enable", false)
             if (cameraEnabled) {
-                Log.i(TAG, "updateLedState: Camera priority")
+                Log.d(TAG, "updateLedState: Camera priority")
                 stopAllEffects()
-                val color = sharedPreferences.getString("light_camera_color", "ff0000") ?: "ff0000"
-                if (color == "gradient") LedManager.setGradientSweep(true)
-                else LedManager.setStaticColor(color)
+                applyEffectColor("light_camera_color", "ff0000", LedManager::setStaticColor)
                 return
             }
         }
@@ -635,7 +748,7 @@ class LightService : Service() {
             if (isDynamicNotification) {
                 val dynEnabled = sharedPreferences.getBoolean("light_dynamic_notifications_enable", false)
                 if (dynEnabled) {
-                    Log.i(TAG, "updateLedState: Dynamic notification pulse priority")
+                    Log.d(TAG, "updateLedState: Dynamic notification pulse priority")
                     stopAllEffects()
                     LedManager.setDynamicBlink(1000, 1000, 1000, 1000, true)
                     return
@@ -643,11 +756,11 @@ class LightService : Service() {
             } else {
                 val notifEnabled = sharedPreferences.getBoolean("light_notifications_enable", false)
                 if (notifEnabled) {
-                    Log.i(TAG, "updateLedState: Notification pulse priority")
+                    Log.d(TAG, "updateLedState: Notification pulse priority")
                     stopAllEffects()
-                    val color = sharedPreferences.getString("light_notifications_color", "ff0000") ?: "ff0000"
-                    if (color == "gradient") LedManager.setGradientSweep(true)
-                    else LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
+                    applyEffectColor("light_notifications_color", "ff0000") { color ->
+                        LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
+                    }
                     return
                 }
             }
@@ -661,7 +774,7 @@ class LightService : Service() {
                 if (audioManager?.isMusicActive == true) {
                     // Game BGM/SFX: visualizer drives brightness with the
                     // game hue (gradient cycles per beat, like music).
-                    Log.i(TAG, "updateLedState: Game beat priority")
+                    Log.d(TAG, "updateLedState: Game beat priority")
                     beatUseGameColor = true
                     beatGameColorHex = color
                     if (!isVisualizerActive) {
@@ -670,10 +783,9 @@ class LightService : Service() {
                     }
                 } else {
                     beatUseGameColor = false
-                    Log.i(TAG, "updateLedState: Game mode priority")
+                    Log.d(TAG, "updateLedState: Game mode priority")
                     stopAllEffects()
-                    if (color == "gradient") LedManager.setGradientSweep(true)
-                    else LedManager.setStaticColor(color)
+                    applyEffectColor("light_game_mode_color", "gradient", LedManager::setStaticColor)
                 }
                 return
             }
@@ -683,7 +795,7 @@ class LightService : Service() {
         if (isMusicActive) {
             val musicEnabled = sharedPreferences.getBoolean("light_music_enable", false)
             if (musicEnabled) {
-                Log.i(TAG, "updateLedState: Music visualizer priority")
+                Log.d(TAG, "updateLedState: Music visualizer priority")
                 beatUseGameColor = false
                 // Stop gradient/blink if standalone or game was previously active
                 if (!isVisualizerActive) {
@@ -698,7 +810,7 @@ class LightService : Service() {
         if (isCharging) {
             val chargingEnabled = sharedPreferences.getBoolean("light_charging_enable", false)
             if (chargingEnabled) {
-                Log.i(TAG, "updateLedState: Charging priority")
+                Log.d(TAG, "updateLedState: Charging priority")
                 stopAllEffects()
                 val mode = sharedPreferences.getString("light_charging_mode", "level") ?: "level"
                 val color = if (mode == "custom") {
@@ -722,12 +834,10 @@ class LightService : Service() {
         // Priority 7: Standalone Color
         val standaloneEnabled = sharedPreferences.getBoolean("light_standalone_enable", false)
         if (standaloneEnabled) {
-            Log.i(TAG, "updateLedState: Standalone color priority")
+            Log.d(TAG, "updateLedState: Standalone color priority")
             // Stop visualizer if music mode was previously active
             stopAllEffects()
-            val color = sharedPreferences.getString("light_standalone_color", "ff0000") ?: "ff0000"
-            if (color == "gradient") LedManager.setGradientSweep(true)
-            else LedManager.setStaticColor(color)
+            applyEffectColor("light_standalone_color", "ff0000", LedManager::setStaticColor)
             return
         }
 

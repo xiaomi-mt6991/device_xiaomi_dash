@@ -8,8 +8,7 @@ package com.xiaomi.settings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.IBinder;
-import android.hardware.display.DisplayManager;
+import android.hardware.display.DisplayManager
 import android.util.Log
 import android.view.Display;
 import android.view.Display.HdrCapabilities;
@@ -22,9 +21,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (DEBUG) Log.d(TAG, "Received boot completed intent: ${intent.action}")
-        when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED -> onBootCompleted(context)
-            Intent.ACTION_LOCKED_BOOT_COMPLETED -> onLockedBootCompleted(context)
+        // BOOT_COMPLETED needs no work of its own; everything runs at
+        // locked boot so features are up before first unlock.
+        if (intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+            onLockedBootCompleted(context)
         }
 
         // Override HDR types
@@ -38,9 +38,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 HdrCapabilities.HDR_TYPE_HDR10_PLUS
             )
         )
-    }
-
-    private fun onBootCompleted(context: Context) {
     }
 
     private fun onLockedBootCompleted(context: Context) {

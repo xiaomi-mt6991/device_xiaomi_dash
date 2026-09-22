@@ -84,7 +84,7 @@ class ColorService : Service() {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
             }
-        registerReceiver(screenStateReceiver, screenStateFilter)
+        registerReceiver(screenStateReceiver, screenStateFilter, Context.RECEIVER_NOT_EXPORTED)
         setCurrentColorMode()
     }
 
@@ -185,8 +185,7 @@ class ColorService : Service() {
 
     companion object {
         private const val TAG = "ColorService"
-        //private val DEBUG = Log.isLoggable(TAG, Log.DEBUG)
-        private val DEBUG = true
+        private val DEBUG = Log.isLoggable(TAG, Log.DEBUG)
 
         private val DEFAULT_COLOR_MODE = SystemProperties.getInt("persist.sys.sf.native_mode", 0)
 

@@ -24,6 +24,9 @@ import com.xiaomi.settings.utils.FileUtils
  * its own thread at [gradientSpeed] rate through runMode 1.
  * Idempotent: repeat calls with identical parameters are no-ops so the
  * 2s state poller and preference listeners never re-trigger the hardware.
+ * Thread-safe: every entry point synchronizes on the instance because the
+ * sweep thread, the LED handler thread and the visualizer thread all
+ * drive the same nodes/state.
  */
 object LedManager {
 
@@ -52,12 +55,14 @@ object LedManager {
     /** 0.1..1.0, driven by the light_brightness preference. */
     @Volatile
     var brightnessScale: Float = 1f
+    @Volatile
     var gradientSpeed: Int = 50
 
     private fun scaledBrightness(): Int = (BASE_BRIGHTNESS * brightnessScale).toInt().coerceIn(1, BASE_BRIGHTNESS)
 
     private var isActive = false
     private var visualizerSteady = false
+    private var lastVizWrite: Pair<Int, Float>? = null
     private var lastRunMode = -1
     private var lastColorHex = ""
     private var lastGradientSpeed = -1
@@ -68,6 +73,7 @@ object LedManager {
     private var lastRepeat = false
     private var lastOffTimeMs = 0L
 
+    @Synchronized
     private fun powerOnIfNeeded(runMode: Int) {
         if (!isActive) {
             val now = System.currentTimeMillis()
@@ -93,13 +99,13 @@ object LedManager {
 
     private val dynamicColors = arrayOf("ff0000", "ff7f00", "ffff00", "00ff00", "00ffff", "0000ff", "800080", "ff00ff")
 
+    @Synchronized
     private fun setDeviceColor(colorHex: String) {
-        val hex = normalize(colorHex)
-        FileUtils.writeLine(RGBCOLOR_NODE, "0x04 0x$hex")
-        FileUtils.writeLine(RGBCOLOR_NODE, "0x03 0x$hex")
+        writeRgbPair(colorHex)
         FileUtils.writeLine(BRIGHTNESS_NODE, scaledBrightness().toString())
     }
 
+    @Synchronized
     private fun setDeviceDualColor(topColorHex: String, bottomColorHex: String) {
         FileUtils.writeLine(RGBCOLOR_NODE, "0x04 0x${normalize(bottomColorHex)}")
         FileUtils.writeLine(RGBCOLOR_NODE, "0x03 0x${normalize(topColorHex)}")
@@ -114,6 +120,7 @@ object LedManager {
     private var sweepHue = 0f
     private val sweepTick =
         object : Runnable {
+            @Synchronized
             override fun run() {
                 if (!sweepActive) return
                 sweepHue = (sweepHue + 360f * SWEEP_TICK_MS / sweepCycleMs()) % 360f
@@ -121,8 +128,7 @@ object LedManager {
                     Integer.toHexString(
                         Color.HSVToColor(floatArrayOf(sweepHue, 1f, 1f)) and 0xFFFFFF,
                     ).padStart(6, '0')
-                FileUtils.writeLine(RGBCOLOR_NODE, "0x04 0x$hex")
-                FileUtils.writeLine(RGBCOLOR_NODE, "0x03 0x$hex")
+                writeRgbPair(hex)
                 FileUtils.writeLine(BRIGHTNESS_NODE, scaledBrightness().toString())
                 sweepHandler.postDelayed(this, SWEEP_TICK_MS)
             }
@@ -132,16 +138,19 @@ object LedManager {
 
     private const val SWEEP_TICK_MS = 100L
 
+    @Synchronized
     private fun cancelSweep() {
         sweepActive = false
         visualizerSteady = false
         sweepHandler.removeCallbacks(sweepTick)
     }
 
+    @Synchronized
     fun turnOff() {
         if (!isActive) return
         Log.i(TAG, "turnOff: Turning OFF LEDs")
         cancelSweep()
+        lastVizWrite = null
         FileUtils.writeLine(RUN_NODE, "0")
         FileUtils.writeLine(GRADIENT_NODE, "0")
         FileUtils.writeLine(REPEAT_NODE, "0")
@@ -152,6 +161,7 @@ object LedManager {
         lastOffTimeMs = System.currentTimeMillis()
     }
 
+    @Synchronized
     fun setVisualizerActive() {
         // Steady state: the FFT path calls this every tick (~10Hz);
         // only the transition does work.
@@ -163,16 +173,29 @@ object LedManager {
         visualizerSteady = true
     }
 
+    @Synchronized
     fun setVisualizerBrightness(level: Int) {
+        // FFT rate (~10Hz): skip identical rewrites (open+write+close).
+        // The scale is folded into the key since it can change under us.
+        val key = level to brightnessScale
+        if (key == lastVizWrite) return
+        lastVizWrite = key
         FileUtils.writeLine(BRIGHTNESS_NODE, (level * brightnessScale).toInt().coerceIn(0, BASE_BRIGHTNESS).toString())
     }
 
+    @Synchronized
     fun setVisualizerColor(colorHex: String) {
+        writeRgbPair(colorHex)
+    }
+
+    @Synchronized
+    private fun writeRgbPair(colorHex: String) {
         val hex = normalize(colorHex)
         FileUtils.writeLine(RGBCOLOR_NODE, "0x04 0x$hex")
         FileUtils.writeLine(RGBCOLOR_NODE, "0x03 0x$hex")
     }
 
+    @Synchronized
     fun setStaticColor(colorHex: String) {
         if (isActive && lastRunMode == 1 && lastColorHex == colorHex) {
             return
@@ -184,6 +207,7 @@ object LedManager {
         lastColorHex = colorHex
     }
 
+    @Synchronized
     fun setBlink(colorHex: String, riseMs: Int, onMs: Int, fallMs: Int, offMs: Int, repeat: Boolean) {
         if (isActive && lastRunMode == 2 && lastColorHex == colorHex &&
             lastRiseMs == riseMs && lastOnMs == onMs && lastFallMs == fallMs &&
@@ -205,6 +229,7 @@ object LedManager {
         lastRepeat = repeat
     }
 
+    @Synchronized
     fun setDynamicBlink(riseMs: Int, onMs: Int, fallMs: Int, offMs: Int, repeat: Boolean) {
         Log.i(TAG, "setDynamicBlink")
         cancelSweep()
@@ -230,6 +255,7 @@ object LedManager {
         lastRepeat = repeat
     }
 
+    @Synchronized
     fun setGradientSweep(enable: Boolean) {
         if (!enable) {
             turnOff()

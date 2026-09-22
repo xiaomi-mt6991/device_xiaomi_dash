@@ -69,12 +69,11 @@ class LedColorPreference @JvmOverloads constructor(
             shape = GradientDrawable.OVAL
             if (hex == VALUE_GRADIENT) {
                 gradientType = GradientDrawable.SWEEP_GRADIENT
-                colors = intArrayOf(
-                    Color.RED, Color.parseColor("#ff7f00"), Color.YELLOW,
-                    Color.GREEN, Color.CYAN, Color.BLUE, Color.parseColor("#800080"),
-                )
+                colors = RAINBOW
+            } else if (hex.equals("ffffff", ignoreCase = true)) {
+                setColor(Color.WHITE)
             } else {
-                setColor(Color.parseColor("#$hex"))
+                setColor(COLORS[hex] ?: Color.GRAY)
             }
             val stroke = dp(if (selected) 3 else 1)
             setStroke(stroke, if (selected) Color.WHITE else Color.GRAY)
@@ -111,6 +110,22 @@ class LedColorPreference @JvmOverloads constructor(
             "800080",
             "ffffff",
             VALUE_GRADIENT,
+        )
+
+        /** Parsed once: onBind rebuilds 9 swatches per rebind otherwise. */
+        private val COLORS = mapOf(
+            "ff0000" to Color.RED,
+            "ff7f00" to Color.parseColor("#ff7f00"),
+            "ffff00" to Color.YELLOW,
+            "00ff00" to Color.GREEN,
+            "00ffff" to Color.CYAN,
+            "0000ff" to Color.BLUE,
+            "800080" to Color.parseColor("#800080"),
+            "ffffff" to Color.WHITE,
+        )
+        private val RAINBOW = intArrayOf(
+            Color.RED, Color.parseColor("#ff7f00"), Color.YELLOW,
+            Color.GREEN, Color.CYAN, Color.BLUE, Color.parseColor("#800080"),
         )
     }
 }

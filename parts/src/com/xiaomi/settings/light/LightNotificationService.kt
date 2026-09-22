@@ -27,10 +27,7 @@ class LightNotificationService : NotificationListenerService() {
         val dynamicEnable = sharedPreferences.getBoolean("light_dynamic_notifications_enable", false)
         val dynamicAppSet = sharedPreferences.getStringSet("light_dynamic_notifications_apps", emptySet()) ?: emptySet()
         if (dynamicEnable && dynamicAppSet.contains(sbn.packageName)) {
-            val intent = Intent(this, LightService::class.java)
-            intent.action = "ACTION_PULSE_NOTIFICATION"
-            intent.putExtra("dynamic", true)
-            startService(intent)
+            pulse(dynamic = true)
             return
         }
 
@@ -39,9 +36,14 @@ class LightNotificationService : NotificationListenerService() {
 
         val appSet = sharedPreferences.getStringSet("light_notifications_apps", emptySet()) ?: emptySet()
         if (appSet.contains(sbn.packageName)) {
-            val intent = Intent(this, LightService::class.java)
-            intent.action = "ACTION_PULSE_NOTIFICATION"
-            startService(intent)
+            pulse(dynamic = false)
         }
+    }
+
+    private fun pulse(dynamic: Boolean) {
+        val intent = Intent(this, LightService::class.java)
+        intent.action = "ACTION_PULSE_NOTIFICATION"
+        if (dynamic) intent.putExtra("dynamic", true)
+        startService(intent)
     }
 }
