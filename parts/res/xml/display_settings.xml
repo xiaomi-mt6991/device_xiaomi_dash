@@ -7,7 +7,7 @@
     <com.xiaomi.settings.widget.TickSeekBarPreference
         android:key="display_saturation"
         android:title="@string/display_saturation_title"
-        android:max="150"
+        android:max="100"
         android:defaultValue="100" />
 
     <Preference

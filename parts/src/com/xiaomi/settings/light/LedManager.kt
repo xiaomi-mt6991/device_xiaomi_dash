@@ -73,6 +73,14 @@ object LedManager {
     private var lastRepeat = false
     private var lastOffTimeMs = 0L
 
+    /**
+     * Brightness scale folded into the static/blink dedupe keys: the
+     * node write happens inside those paths, so a brightness-slider
+     * change with an otherwise identical effect must not early-return
+     * or the new scale would never reach the hardware.
+     */
+    private var lastScale = -1f
+
     @Synchronized
     private fun powerOnIfNeeded(runMode: Int) {
         if (!isActive) {
@@ -197,7 +205,7 @@ object LedManager {
 
     @Synchronized
     fun setStaticColor(colorHex: String) {
-        if (isActive && lastRunMode == 1 && lastColorHex == colorHex) {
+        if (isActive && lastRunMode == 1 && lastColorHex == colorHex && lastScale == brightnessScale) {
             return
         }
         Log.i(TAG, "setStaticColor: color=$colorHex")
@@ -205,13 +213,14 @@ object LedManager {
         powerOnIfNeeded(1) // 1 = always-on
         setDeviceColor(colorHex)
         lastColorHex = colorHex
+        lastScale = brightnessScale
     }
 
     @Synchronized
     fun setBlink(colorHex: String, riseMs: Int, onMs: Int, fallMs: Int, offMs: Int, repeat: Boolean) {
         if (isActive && lastRunMode == 2 && lastColorHex == colorHex &&
             lastRiseMs == riseMs && lastOnMs == onMs && lastFallMs == fallMs &&
-            lastOffMs == offMs && lastRepeat == repeat) {
+            lastOffMs == offMs && lastRepeat == repeat && lastScale == brightnessScale) {
             return
         }
         Log.i(TAG, "setBlink: color=$colorHex, repeat=$repeat")
@@ -227,6 +236,7 @@ object LedManager {
         lastFallMs = fallMs
         lastOffMs = offMs
         lastRepeat = repeat
+        lastScale = brightnessScale
     }
 
     @Synchronized

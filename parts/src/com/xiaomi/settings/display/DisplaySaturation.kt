@@ -19,6 +19,13 @@ import androidx.preference.PreferenceManager
  * LIVE via the color_display service — no reboot, no root. Needs the
  * CONTROL_DISPLAY_COLOR_TRANSFORMS permission (platform-signed +
  * priv-app, both true for this app).
+ *
+ * Range is 0-100 despite the earlier 0-150 attempt: the service's
+ * GlobalSaturationTintController.setMatrix clamps anything above 100
+ * to 100 and then installs the *identity* matrix, so 101-150 was a
+ * silent no-op (the device's own `cmd color_display set-saturation`
+ * enforces 0-100 as well). A boost past stock is only possible via a
+ * color-mode change, not this transform.
  */
 object DisplaySaturation {
 
@@ -30,15 +37,10 @@ object DisplaySaturation {
     fun get(context: Context): Int =
         PreferenceManager.getDefaultSharedPreferences(context).getInt(KEY, DEFAULT)
 
-    /**
-     * Range is 0-150 on purpose: 100 is stock full saturation, above
-     * attempts a boost past default. SurfaceFlinger may clamp — the
-     * test build decides whether >100 is real.
-     */
     fun apply(context: Context, level: Int = get(context)): Boolean =
         runCatching {
             val manager = context.getSystemService(ColorDisplayManager::class.java)
                 ?: throw IllegalStateException("color_display service not published yet")
-            manager.setSaturationLevel(level.coerceIn(0, 150))
+            manager.setSaturationLevel(level.coerceIn(0, 100))
         }.onFailure { e -> Log.w(TAG, "setSaturationLevel failed", e) }.isSuccess
 }
