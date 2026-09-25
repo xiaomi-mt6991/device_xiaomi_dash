@@ -26,17 +26,15 @@ on post-fs-data
     write /proc/sys/kernel/sched_pelt_multiplier 4
     write /proc/sys/kernel/sched_util_clamp_min_rt_default 0
 
-    # boot perf. tune
-    write /dev/cpuctl/system/cpu.uclamp.min 100
-    write /dev/cpuctl/system/cpu.uclamp.latency_sensitive 1
-    write /dev/cpuctl/system-background/cpu.uclamp.min 100
-    write /dev/cpuctl/system-background/cpu.uclamp.latency_sensitive 1
-    write /dev/cpuctl/foreground/cpu.uclamp.min 100
-    write /dev/cpuctl/foreground/cpu.uclamp.latency_sensitive 1
-    write /dev/cpuctl/top-app/cpu.uclamp.min 100
-    write /dev/cpuctl/top-app/cpu.uclamp.latency_sensitive 1
-    write /dev/cpuctl/background/cpu.uclamp.min 100
-    write /dev/cpuctl/background/cpu.uclamp.latency_sensitive 1
+    # NOTE: the uclamp.min 100 / latency_sensitive 1 block that used to sit
+    # here has been removed. uclamp.min 100 declares "this cgroup needs
+    # 100% CPU" to the scheduler and therefore holds clusters at high
+    # clocks for the whole window between post-fs-data and
+    # sys.boot_completed. That window is boot-time only, but it is still
+    # needless demand signalling; the governor lines above already let
+    # clusters idle once boot is complete.
+
+    # boot perf. tune (frequency floors only; no demand signalling)
 
 on boot
     chown system system /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
@@ -65,6 +63,14 @@ on property:sys.boot_completed=1
     write /dev/cpuctl/background/cpu.uclamp.latency_sensitive 0
 
     write /sys/kernel/debug/sched/migration_cost_ns 200000
+
+    # Keep the three real cpufreq policies on schedutil after boot has
+    # completed. The post-fs-data writes above are effective on a clean
+    # dash reboot; this is an idempotent late re-assert for the intended
+    # governor, with no dependency on a policy count or a shell glob.
+    write /sys/devices/system/cpu/cpufreq/policy0/scaling_governor schedutil
+    write /sys/devices/system/cpu/cpufreq/policy4/scaling_governor schedutil
+    write /sys/devices/system/cpu/cpufreq/policy7/scaling_governor schedutil
 
     # start cpuqos
     write /sys/devices/system/cpu/cpuqos/cpuqos_boot_complete 1
