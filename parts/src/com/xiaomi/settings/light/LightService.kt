@@ -594,8 +594,23 @@ class LightService : Service() {
     @Volatile private var pendingBrightness = 0
     @Volatile private var vizPending = false
 
+    /**
+     * Bumped on every start/stop of the visualizer. The FFT callback runs
+     * on the audio capture thread, so one can be in flight while
+     * stopVisualizer() is tearing things down and will happily post a
+     * vizUpdate *after* removeCallbacks(). That late update used to call
+     * setVisualizerActive() -> cancelSweep(), which killed whichever
+     * gradient had just been started (notifications, charging), so the
+     * strip went dark when a notification arrived. A queued update is
+     * tagged with the generation it was produced under and dropped if the
+     * generation moved on.
+     */
+    @Volatile private var vizGeneration = 0
+    @Volatile private var pendingVizGeneration = 0
+
     private val vizUpdate = Runnable {
         vizPending = false
+        if (pendingVizGeneration != vizGeneration || !isVisualizerActive) return@Runnable
         val onset = pendingOnset
         val brightness = pendingBrightness
         LedManager.setVisualizerActive()
@@ -624,6 +639,7 @@ class LightService : Service() {
     private fun startVisualizer() {
         if (isVisualizerActive) return
         Log.i(TAG, "startVisualizer")
+        vizGeneration++
         lastBeatColorHex = ""
         bassFloor = 0f
         smoothLevel = 0f
@@ -661,7 +677,9 @@ class LightService : Service() {
                     pendingOnset = onset
                     pendingBrightness = brightness
                     val vh = visualizerHandler
-                    if (vh != null && !vizPending) {
+                    val gen = vizGeneration
+                    if (vh != null && !vizPending && gen == vizGeneration) {
+                        pendingVizGeneration = gen
                         vizPending = true
                         vh.post(vizUpdate)
                     }
@@ -676,6 +694,10 @@ class LightService : Service() {
     }
 
     private fun stopVisualizer() {
+        // Invalidate first, and do it even when already inactive: an FFT
+        // callback racing the teardown can post after removeCallbacks(),
+        // and that update must be recognised as stale.
+        vizGeneration++
         if (!isVisualizerActive) return
         Log.i(TAG, "stopVisualizer")
         // Drop any queued vizUpdate: it would re-power the LEDs through

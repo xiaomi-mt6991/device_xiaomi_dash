@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import com.xiaomi.settings.utils.FileUtils
+import java.io.FileOutputStream
 
 /**
  * Driver for the AW21024 RGB LED (back light effects).
@@ -59,6 +60,20 @@ object LedManager {
     var gradientSpeed: Int = 50
 
     private fun scaledBrightness(): Int = (BASE_BRIGHTNESS * brightnessScale).toInt().coerceIn(1, BASE_BRIGHTNESS)
+
+    /**
+     * Minimal writer for the hot paths (sweep tick, visualizer).
+     *
+     * FileUtils.writeLine builds a BufferedWriter per call, which allocates
+     * an 8 KiB char buffer every time. At ~30 Hz across two channels that
+     * is steady GC churn on the sweep thread, which is exactly what makes
+     * an animation look choppy. A raw FileOutputStream keeps it to one
+     * small byte array per write.
+     */
+    private fun writeFast(node: String, value: String) {
+        runCatching { FileOutputStream(node).use { it.write(value.toByteArray()) } }
+            .onFailure { Log.w(TAG, "write $node failed: ${it.message}") }
+    }
 
     private var isActive = false
     private var visualizerSteady = false
@@ -126,25 +141,54 @@ object LedManager {
     private val sweepHandler = Handler(sweepThread.looper)
     private var sweepActive = false
     private var sweepHue = 0f
+    private var lastSweepTickMs = 0L
+    /**
+     * Brightness scale the hardware was last told about. The sweep writes
+     * brightness only when this changes, not on every tick: brightness is
+     * constant across a hue rotation, and re-writing it at tick rate both
+     * wastes a sysfs write and stomps the music visualizer's beat-driven
+     * brightness whenever the two overlap.
+     */
+    private var sweepLastScale = -1f
     private val sweepTick =
         object : Runnable {
             @Synchronized
             override fun run() {
                 if (!sweepActive) return
-                sweepHue = (sweepHue + 360f * SWEEP_TICK_MS / sweepCycleMs()) % 360f
+
+                // Advance by real elapsed time, not the nominal tick, so a
+                // busy CPU delays a frame instead of stretching the cycle.
+                val now = android.os.SystemClock.uptimeMillis()
+                val delta =
+                    if (lastSweepTickMs == 0L) SWEEP_TICK_MS
+                    else (now - lastSweepTickMs).coerceIn(1L, SWEEP_TICK_MS * 4)
+                lastSweepTickMs = now
+
+                sweepHue = (sweepHue + 360f * delta / sweepCycleMs()) % 360f
                 val hex =
                     Integer.toHexString(
                         Color.HSVToColor(floatArrayOf(sweepHue, 1f, 1f)) and 0xFFFFFF,
                     ).padStart(6, '0')
                 writeRgbPair(hex)
-                FileUtils.writeLine(BRIGHTNESS_NODE, scaledBrightness().toString())
+
+                if (sweepLastScale != brightnessScale) {
+                    sweepLastScale = brightnessScale
+                    writeFast(BRIGHTNESS_NODE, scaledBrightness().toString())
+                }
+
                 sweepHandler.postDelayed(this, SWEEP_TICK_MS)
             }
         }
 
     private fun sweepCycleMs(): Long = ((105 - gradientSpeed.coerceIn(1, 100)) * 100L).coerceAtLeast(500L)
 
-    private const val SWEEP_TICK_MS = 100L
+    /**
+     * ~30Hz. The old 100ms (10Hz) was visibly steppy next to Game mode,
+     * which updates at the audio capture rate and lets the driver
+     * interpolate. 33ms matches that cadence closely enough that the two
+     * modes look consistent.
+     */
+    private const val SWEEP_TICK_MS = 33L
 
     @Synchronized
     private fun cancelSweep() {
@@ -188,7 +232,7 @@ object LedManager {
         val key = level to brightnessScale
         if (key == lastVizWrite) return
         lastVizWrite = key
-        FileUtils.writeLine(BRIGHTNESS_NODE, (level * brightnessScale).toInt().coerceIn(0, BASE_BRIGHTNESS).toString())
+        writeFast(BRIGHTNESS_NODE, (level * brightnessScale).toInt().coerceIn(0, BASE_BRIGHTNESS).toString())
     }
 
     @Synchronized
@@ -199,8 +243,8 @@ object LedManager {
     @Synchronized
     private fun writeRgbPair(colorHex: String) {
         val hex = normalize(colorHex)
-        FileUtils.writeLine(RGBCOLOR_NODE, "0x04 0x$hex")
-        FileUtils.writeLine(RGBCOLOR_NODE, "0x03 0x$hex")
+        writeFast(RGBCOLOR_NODE, "0x04 0x$hex")
+        writeFast(RGBCOLOR_NODE, "0x03 0x$hex")
     }
 
     @Synchronized
@@ -277,6 +321,11 @@ object LedManager {
         Log.i(TAG, "setGradientSweep: speed=$gradientSpeed")
         cancelSweep()
         sweepActive = true
+        // Force the first tick to publish brightness: sweepLastScale is
+        // compared against it, so leaving it equal would skip the write
+        // and the strip would stay at whatever the previous effect left.
+        sweepLastScale = -1f
+        lastSweepTickMs = 0L
         powerOnIfNeeded(1) // always-on base; hue steps do the sweep
         FileUtils.writeLine(GRADIENT_NODE, "0")
         FileUtils.writeLine(REPEAT_NODE, "0")
