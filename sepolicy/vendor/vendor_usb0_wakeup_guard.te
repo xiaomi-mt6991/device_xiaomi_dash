@@ -1,0 +1,37 @@
+# Guard that keeps the mtu3 controller's wakeup source from wedging
+# suspend. It needs a domain of its own because init cannot execute
+# vendor files:
+#
+#   avc: denied { execute } for comm="init" name="init.usb0_wakeup.sh"
+#        dev="dm-11" ino=426112 scontext=u:r:init:s0
+#        tcontext=u:object_r:vendor_file:s0 tclass=file permissive=0
+#
+# The service carried seclabel u:r:init:s0, which only selects the
+# domain and never the file label, so init exec-failed and reported
+# init.svc.usb0_wakeup_guard=stopped while 16701000.usb0 still held an
+# active wakeup source. Mirrors vendor_batterysecret and
+# vendor_touch_init_shell, the tree's other init-started scripts.
+type vendor_usb0_wakeup_guard, domain;
+type vendor_usb0_wakeup_guard_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(vendor_usb0_wakeup_guard)
+
+allow vendor_usb0_wakeup_guard vendor_usb0_wakeup_guard_exec:file { entrypoint rx_file_perms };
+
+# #! interpreter.
+allow vendor_usb0_wakeup_guard vendor_shell_exec:file { entrypoint rx_file_perms };
+
+# /vendor/bin/sleep -> toybox_vendor, reached through the vendor_file
+# symlinks and directory in /vendor/bin.
+allow vendor_usb0_wakeup_guard vendor_file:dir search;
+allow vendor_usb0_wakeup_guard vendor_file:lnk_file r_file_perms;
+allow vendor_usb0_wakeup_guard vendor_toolbox_exec:file rx_file_perms;
+
+# Walk /sys down to 16701000.usb0/power. Those parents are generic
+# sysfs, so the traversal needs its own grant.
+allow vendor_usb0_wakeup_guard sysfs:dir search;
+
+# power/wakeup and power/wakeup_active: disable->enable re-creates the
+# source inactive. sysfs_usb_nonplat, never generic sysfs, whose writes
+# the neverallow forbids.
+rw_dir_file(vendor_usb0_wakeup_guard, sysfs_usb_nonplat)

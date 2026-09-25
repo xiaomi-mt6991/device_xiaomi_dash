@@ -226,7 +226,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     init.esim.sh \
     init.insmod.sh \
-    init.pstore_blk.sh
+    init.pstore_blk.sh \
+    init.usb0_wakeup.sh
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/init/init.recovery.mt6991.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.mt6991.rc

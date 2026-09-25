@@ -138,3 +138,9 @@ sh_binary {
     src: "init.insmod.sh",
     vendor: true,
 }
+
+sh_binary {
+    name: "init.usb0_wakeup.sh",
+    src: "init.usb0_wakeup.sh",
+    vendor: true,
+}
