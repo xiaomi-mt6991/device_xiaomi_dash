@@ -1110,6 +1110,40 @@ on property:sys.boot_completed=1
     # stop bootprof
     write /proc/bootprof 0
 
+# The mtu3 USB controller (16701000.usb0) takes a wakeup source during
+# boot gadget bring-up (~t+7s) and never releases it; the held source
+# blocks /sys/power/wakeup_count reads (pm_get_wakeup_count waits out
+# in-processing wakeup events), so SystemSuspend never issues suspend.
+# disable->enable re-creates the wakeup source inactive; gadget resets,
+# function switches and adbd restarts do not re-trigger the leak.
+# The power/wakeup* nodes are labeled sysfs_usb_nonplat so the guard may
+# write them (neverallow forbids writes to generic sysfs).
+#
+# The same source is also re-armed later, when a USB charger is attached:
+# PowerDet takes a "charger suspend wakelock" on 16701000.usb0, long after
+# boot_completed, so a one-shot toggle at boot does not cover it. The
+# guard below re-applies the toggle whenever power/wakeup_active reports
+# the source held. That read is an atomic_read in the driver, so unlike
+# reading wakeup_count it cannot block -- and reading wakeup_count is
+# exactly what wedges once the source is held. The guard holds no
+# wakelock, so it does not itself prevent suspend.
+#
+# No seclabel: init cannot execute vendor files (avc: denied { execute }
+# comm="init" tcontext=u:object_r:vendor_file:s0), and seclabel picks the
+# domain but never the file label. The guard therefore runs in its own
+# vendor_usb0_wakeup_guard domain. Not oneshot either: against a one-shot
+# sys.boot_completed trigger, oneshot made any exit leave the guard dead
+# until reboot (observed: init.svc.usb0_wakeup_guard=stopped).
+service usb0_wakeup_guard /vendor/bin/init.usb0_wakeup.sh
+    class core
+    user root
+    group root
+    disabled
+    restart_period 5
+
+on property:sys.boot_completed=1
+    start usb0_wakeup_guard
+
 #service dpfd /vendor/bin/dpfd
 #	user root
 #	group system media
