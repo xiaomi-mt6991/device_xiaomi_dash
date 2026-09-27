@@ -13,8 +13,7 @@ import vendor.xiaomi.hardware.displayfeature_aidl.IDisplayFeature
 object DisplayFeatureWrapper {
 
     private const val TAG = "DisplayFeatureWrapper"
-    //private val DEBUG = Log.isLoggable(TAG, Log.DEBUG)
-    private val DEBUG = true
+    private val DEBUG = Log.isLoggable(TAG, Log.DEBUG)
 
     @Volatile private var displayFeature: IDisplayFeature? = null
 

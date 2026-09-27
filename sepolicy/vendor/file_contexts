@@ -62,6 +62,9 @@
 # Graphics
 /sys/class/drm/card0-DSI-1/brightness_clone u:object_r:vendor_sysfs_graphics:s0
 
+# Lights (AW21024 RGB LED, back light effects)
+/sys/devices/platform/soc/13b30000.i2c/i2c-8/8-0030/leds/aw21024_led(/.*)?      u:object_r:sysfs_leds_aw21024:s0
+
 # HypSys
 /vendor/bin/hw/xiaomi\.system\.hypsys\.common-service-dummy u:object_r:hal_hypsys_vendor_exec:s0
 

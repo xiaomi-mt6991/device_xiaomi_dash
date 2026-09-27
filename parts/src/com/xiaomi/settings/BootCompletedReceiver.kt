@@ -8,21 +8,23 @@ package com.xiaomi.settings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.IBinder;
-import android.hardware.display.DisplayManager;
+import android.hardware.display.DisplayManager
 import android.util.Log
 import android.view.Display;
 import android.view.Display.HdrCapabilities;
 import com.xiaomi.settings.display.ColorService
+import com.xiaomi.settings.display.DisplaySaturation
+import com.xiaomi.settings.light.LightService
 import com.xiaomi.settings.touch.TouchReportRateService
 
 class BootCompletedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (DEBUG) Log.d(TAG, "Received boot completed intent: ${intent.action}")
-        when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED -> onBootCompleted(context)
-            Intent.ACTION_LOCKED_BOOT_COMPLETED -> onLockedBootCompleted(context)
+        // BOOT_COMPLETED needs no work of its own; everything runs at
+        // locked boot so features are up before first unlock.
+        if (intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+            onLockedBootCompleted(context)
         }
 
         // Override HDR types
@@ -38,14 +40,16 @@ class BootCompletedReceiver : BroadcastReceiver() {
         )
     }
 
-    private fun onBootCompleted(context: Context) {
-    }
-
     private fun onLockedBootCompleted(context: Context) {
         // Display
         ColorService.startService(context)
+        DisplaySaturation.apply(context)
         // Touch
         TouchReportRateService.startService(context)
+        // Back light effects
+        if (LightService.isEnabled(context)) {
+            LightService.start(context)
+        }
     }
 
     companion object {

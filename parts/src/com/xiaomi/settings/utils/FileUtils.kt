@@ -17,42 +17,15 @@
 package com.xiaomi.settings.utils
 
 import android.util.Log
-import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileNotFoundException
-import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 
 object FileUtils {
 
     private const val TAG = "FileUtils"
-
-    /**
-     * Reads the first line of text from the given file.
-     *
-     * @return the read line contents, or null on failure
-     */
-    fun readOneLine(fileName: String): String? {
-        var reader: BufferedReader? = null
-        var line: String? = null
-        try {
-            reader = BufferedReader(FileReader(fileName), 512)
-            line = reader.readLine()
-        } catch (e: FileNotFoundException) {
-            Log.w(TAG, "No such file $fileName for reading", e)
-        } catch (e: IOException) {
-            Log.e(TAG, "Could not read from file $fileName", e)
-        } finally {
-            try {
-                reader?.close()
-            } catch (e: IOException) {
-                // Ignored
-            }
-        }
-        return line
-    }
 
     /**
      * Writes the given value into the given file.
@@ -79,13 +52,6 @@ object FileUtils {
         }
         return true
     }
-
-    /** Checks whether the given file exists. */
-    fun fileExists(fileName: String): Boolean = File(fileName).exists()
-
-    /** Checks whether the given file is readable. */
-    fun isFileReadable(fileName: String): Boolean =
-        File(fileName).let { it.exists() && it.canRead() }
 
     /** Checks whether the given file is writable. */
     fun isFileWritable(fileName: String): Boolean =
