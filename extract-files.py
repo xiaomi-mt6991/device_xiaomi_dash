@@ -219,6 +219,13 @@ blob_fixups: blob_fixups_user_type = {
         .replace_needed('libnbaio_mono.so', 'libnbaio_mono-dash.so'),
     'vendor/lib64/libaudio_aidl_conversion_common_ndk_prebuilt.so': blob_fixup()
         .replace_needed('android.media.audio.common.types-V5-ndk.so', 'android.media.audio.common.types-V3-ndk.so'),
+    # WiFi: remove wowlan_triggers=disconnect from wpa_supplicant
+    # overlays so the firmware won't wake the system on disconnect
+    # events, which causes WLAN wakelocks during idle.
+    'vendor/etc/wifi/p2p_supplicant_overlay.conf': blob_fixup()
+        .regex_replace('wowlan_triggers=disconnect\n', ''),
+    'vendor/etc/wifi/wpa_supplicant_overlay.conf': blob_fixup()
+        .regex_replace('wowlan_triggers=disconnect\n', ''),
     'vendor/lib64/libcodec2_fsr.so': blob_fixup()
         .call(blob_fixup_graphic_buffer_size)
         .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
