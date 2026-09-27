@@ -224,6 +224,15 @@ blob_fixups: blob_fixups_user_type = {
         .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
     'vendor/lib64/libcom.xiaomi.grallocutils.so': blob_fixup()
         .call(blob_fixup_graphic_buffer_size),
+    # libswtcc.so (AppTCCCore) is loaded only by
+    # vpp_hdrmeta_handler_plugin.so, i.e. only while VppHdrEditing runs
+    # for an HDR10+ session. It does operator new(0x100) for an
+    # android::GraphicBuffer exactly like the other blobs covered by
+    # blob_fixup_graphic_buffer_size, but was missing from the fixup
+    # list, so it under-allocates on this ROM and smashes the heap of
+    # the codec2 process for the whole HDR10+ session.
+    'vendor/lib64/libswtcc.so': blob_fixup()
+        .call(blob_fixup_graphic_buffer_size),
     'vendor/lib64/libmicamera_hal_core.so': blob_fixup()
         .call(blob_fixup_graphic_buffer_size)
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v36.so'),
