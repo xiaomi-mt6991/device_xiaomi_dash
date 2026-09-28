@@ -801,7 +801,7 @@ vendor/etc/camera/mimotion_f4b.bin
 vendor/etc/camera/mimotion_f4w.bin
 vendor/etc/camera/mimotion_f5b.bin
 vendor/etc/camera/mimotion_f5w.bin
-vendor/etc/camera/mt6991/gma_custom.xml:vendor/etc/camera/gma_custom.txt;SYMLINK=vendor/etc/camera/gma_custom.xml
+vendor/etc/camera/mt6991/gma_custom.xml:vendor/etc/camera/mt6991/gma_custom.txt;SYMLINK=vendor/etc/camera/mt6991/gma_custom.xml
 vendor/etc/init/camerahalserver.rc
 vendor/etc/vintf/manifest/manifest_aovservice.xml
 vendor/etc/vintf/manifest/manifest_cameraprovider.xml
