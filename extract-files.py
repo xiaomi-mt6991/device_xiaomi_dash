@@ -59,6 +59,29 @@ def blob_fixup_graphic_buffer_size(
                 f.write(b'\x00\xa6\x81\x52')  # AArch64 mov w0, #0xd30
 
 
+def blob_fixup_zero_wlan_wakelock_cfg(
+    ctx: BlobFixupCtx,
+    file: File,
+    file_path: str,
+    *args,
+    **kwargs,
+):
+    with open(file_path, 'rb') as f:
+        data = f.read()
+    if b'WakeLockThreadTO' in data:
+        return
+    if not data.endswith(b'\n'):
+        data += b'\n'
+    data += (
+        b'# Zero the per-event wake-lock grace periods so WLAN timeout never '
+        b'blocks suspend\n'
+        b'WakeLockThreadTO 0\n'
+        b'WakeLockRxTO 0\n'
+    )
+    with open(file_path, 'wb') as f:
+        f.write(data)
+
+
 def lib_fixup_vendor_suffix(lib: str, partition: str, *args, **kwargs):
     return f'{lib}_{partition}' if partition == 'vendor' else None
 
@@ -226,6 +249,13 @@ blob_fixups: blob_fixups_user_type = {
         .regex_replace('wowlan_triggers=disconnect\n', ''),
     'vendor/etc/wifi/wpa_supplicant_overlay.conf': blob_fixup()
         .regex_replace('wowlan_triggers=disconnect\n', ''),
+    # WLAN: stock wifi.cfg carries no WakeLock* keys, so the driver's
+    # per-event wake-lock grace periods stay at the compiled defaults
+    # (WakeLockThreadTO 50 ms / WakeLockRxTO 300 ms) and every radio event
+    # keeps the "WLAN timeout" wakeup source active that long. Zero both
+    # so it releases immediately and never blocks suspend.
+    'vendor/firmware/wifi.cfg': blob_fixup()
+        .call(blob_fixup_zero_wlan_wakelock_cfg),
     'vendor/lib64/libcodec2_fsr.so': blob_fixup()
         .call(blob_fixup_graphic_buffer_size)
         .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
