@@ -35,8 +35,8 @@ PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 
 # Properties
 PRODUCT_BUILD_PROP_OVERRIDES += \
-    BuildDesc="missi-user 16 BP2A.250605.031.A3 16OS3.1.260610.093029543.MTPEGL.S release-keys" \
-    BuildFingerprint=POCO/dash_global/dash:16/BP2A.250605.031.A3/OS3.0.302.0.WPLMIXM:user/release-keys \
+    BuildDesc="missi-user 16 BP2A.250605.031.A3 16OS3.1.260728.145010743.MTPEGL.S release-keys" \
+    BuildFingerprint=POCO/dash_global/dash:16/BP2A.250605.031.A3/OS3.0.303.0.WPLMIXM:user/release-keys \
     DeviceName=dash \
     DeviceProduct=dash_global \
     SystemDevice=dash \

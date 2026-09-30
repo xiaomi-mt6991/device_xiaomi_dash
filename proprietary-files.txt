@@ -1,5 +1,5 @@
 # All proprietary files from this list, unless pinned and noted otherwise,
-# are from POCO X8 Pro Max (OS3.0.302.0.WPLMIXM).
+# are from POCO X8 Pro Max (OS3.0.303.0.WPLMIXM).
 
 # ADSP-Modules
 odm/lib/rfsa/adsp/libaisupernight_ellc_cdsp_skel.so
@@ -842,7 +842,6 @@ vendor/lib64/libAIHDIcon.so
 vendor/lib64/libBasicModule.so
 vendor/lib64/libBlAlgointf.so
 vendor/lib64/libFrameRecord.so
-vendor/lib64/libHEVCdec_sa.ca7.android.so
 vendor/lib64/libJpgEncPipe.so
 vendor/lib64/libMi3AAlgoInfo.so
 vendor/lib64/libMiMotion.so

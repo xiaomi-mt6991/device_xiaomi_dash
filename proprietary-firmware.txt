@@ -1,5 +1,5 @@
 # All proprietary files from this list, unless pinned and noted otherwise,
-# are from POCO X8 Pro Max (OS3.0.302.0.WPLMIXM).
+# are from POCO X8 Pro Max (OS3.0.303.0.WPLMIXM).
 
 apusys.img;AB
 audio_dsp.img;AB
