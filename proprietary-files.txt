@@ -913,6 +913,7 @@ vendor/lib64/libjpeg-alpha-oal_vendor.so
 vendor/lib64/libjpeg-alpha_vendor.so
 vendor/lib64/libjpegdecoder.so:vendor/lib64/libjpegdecoder-v36.so;FIX_SONAME
 vendor/lib64/libjpegencoder.so:vendor/lib64/libjpegencoder-v36.so;FIX_SONAME
+vendor/lib64/libkeymint_support.so:vendor/lib64/libkeymint_support_mtk.so;FIX_SONAME
 vendor/lib64/liblegendmsg.so
 vendor/lib64/liblocalFlickerDet.so
 vendor/lib64/libmcve.so
