@@ -45,6 +45,18 @@ object LedManager {
     private const val BASE_BRIGHTNESS = 80
 
     /**
+     * Rhythmic mode gets the driver's full range instead of [BASE_BRIGHTNESS].
+     *
+     * The strip's max_brightness is 255, but capping beat pulses at 80
+     * squeezes the whole animation into the bottom third of the response
+     * curve, where perceptual steps are largest - so beats read as a harsh
+     * on/off snap instead of a breath. Only setVisualizerBrightness uses
+     * this; static/blink/breathe effects keep [BASE_BRIGHTNESS] so their
+     * brightness and power draw are unchanged.
+     */
+    private const val VISUALIZER_MAX_BRIGHTNESS = 255
+
+    /**
      * White-point trim: full 0xFFFFFF renders pinkish on this strip
      * (hot red channel), so white is pulled toward cyan. First
      * calibration; adjust if still off.
@@ -227,9 +239,13 @@ object LedManager {
 
     @Synchronized
     fun setVisualizerBrightness(level: Int) {
-        // Always write at ~10Hz; FileOutputStream is lightweight enough
-        // and consecutive onsets must never be dropped.
-        writeFast(BRIGHTNESS_NODE, (level * brightnessScale).toInt().coerceIn(0, BASE_BRIGHTNESS).toString())
+        // Always write at the capture rate; FileOutputStream is lightweight
+        // enough and consecutive onsets must never be dropped. Range is the
+        // driver's own 0..255, not BASE_BRIGHTNESS - see VISUALIZER_MAX_BRIGHTNESS.
+        writeFast(
+            BRIGHTNESS_NODE,
+            (level * brightnessScale).toInt().coerceIn(0, VISUALIZER_MAX_BRIGHTNESS).toString(),
+        )
     }
 
     @Synchronized
@@ -306,13 +322,47 @@ object LedManager {
         lastRepeat = repeat
     }
 
+    /**
+     * Re-publish brightness after [brightnessScale] changed, without
+     * disturbing the running effect.
+     *
+     * Deliberately writes only the brightness node. Going through
+     * setStaticColor/setBlink to apply a scale change would also rewrite
+     * rgbcolor/repeat/period, and a seekbar drag fires that ~60x/second -
+     * which the strip reads as the pattern restarting over and over.
+     */
+    @Synchronized
+    fun refreshBrightness() {
+        lastScale = brightnessScale
+        if (!isActive) return
+        // The visualizer publishes its own 0..255 level on every FFT tick and
+        // already multiplies in the scale, so leave it alone.
+        if (visualizerSteady) return
+        if (sweepActive) {
+            // Let the next sweep tick publish it, so the write lands on the
+            // sweep thread rather than racing it.
+            sweepLastScale = -1f
+        } else {
+            writeFast(BRIGHTNESS_NODE, scaledBrightness().toString())
+        }
+    }
+
     @Synchronized
     fun setGradientSweep(enable: Boolean) {
         if (!enable) {
             turnOff()
             return
         }
-        if (sweepActive && lastGradientSpeed == gradientSpeed) {
+        if (sweepActive) {
+            // Already sweeping. The running tick re-reads gradientSpeed every
+            // frame through sweepCycleMs(), so a speed change needs nothing
+            // but the dedupe key - the ramp retunes live and stays smooth.
+            //
+            // Rebuilding here (the old path) cancelled the tick chain and zeroed
+            // lastSweepTickMs on every call, so dragging the slider restarted the
+            // hue ramp once per drag step and forced a brightness write on each
+            // tick: the strip crawled in drag-rate steps and strobed.
+            lastGradientSpeed = gradientSpeed
             return
         }
         Log.i(TAG, "setGradientSweep: speed=$gradientSpeed")

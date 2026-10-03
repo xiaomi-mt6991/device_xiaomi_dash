@@ -35,22 +35,45 @@ import kotlin.math.sqrt
 /**
  * Back light effects service (AW21024 RGB LED).
  *
- * Priority: incoming call > camera in use > notification pulse >
- * game > charging > music visualizer > standalone color.
+ * Priority: incoming call > camera in use > game beat > music visualizer >
+ * notification pulse (deferred while rhythmic is active) > charging >
+ * standalone color.
  */
 class LightService : Service() {
 
     companion object {
         private const val TAG = "LightService"
 
-        // Beat detector tuning: FFT magnitudes run ~0-128+. Sensitive
-        // enough for compressed pop (low crest factor), slow release for
-        // deep valleys so single colors visibly pump, not just breathe.
+        // Beat detector tuning. FFT magnitudes are signed 8-bit (AOSP
+        // Visualizer.cpp clamps each sample into [-128,127] with 0 at rest),
+        // so they run ~0..181 and no 128 offset is needed.
+        //
+        // Onset is peak-relative rather than floor-relative. The old build
+        // compared against an adaptive floor that moved up at 0.25/frame,
+        // so the bar tracked the music and only a 1.15x overshoot was needed -
+        // compressed pop (low crest factor, which is what YouTube Music and
+        // friends stream) crossed it almost continuously. That pinned the
+        // strip at max and flickered instead of tracking beats.
+        //
+        // A fast-attack/slow-decay peak envelope against a fixed ratio
+        // locks onto discrete kicks, and the refractory window stops one
+        // kick being counted as several.
         private const val ONSET_FLOOR = 6f
-        private const val ONSET_RATIO = 1.15f
-        private const val BRIGHT_GAIN = 1.0f
-        private const val ATTACK = 0.8f
-        private const val RELEASE = 0.08f
+        private const val ONSET_RATIO = 1.35f
+        private const val PEAK_DECAY = 0.12f
+        private const val ONSET_REFRACTORY_MS = 130L
+        // Bass energy -> brightness. This is the primary feel knob: the
+        // visualizer now spans the driver's full 0..255 instead of 0..80, so
+        // gain has to make up the ~3x or quiet passages sit almost black.
+        // Raise it to punch harder, lower it if loud tracks clip at the top.
+        private const val BRIGHT_GAIN = 2.0f
+        private const val ATTACK = 0.55f
+        private const val RELEASE = 0.06f
+        // Beat contribution: a decaying spike layered over the smoothed
+        // level, so a hit reads as a punch rather than a jump to the ceiling.
+        private const val BEAT_FLASH = 0.45f
+        private const val BEAT_FLASH_DECAY = 0.86f
+        private const val VISUALIZER_MAX = 255f
 
         fun isEnabled(context: Context): Boolean =
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
@@ -80,6 +103,12 @@ class LightService : Service() {
     @Volatile private var isServiceRunning = false
     @Volatile private var isNotificationPulsing = false
     @Volatile private var isDynamicNotification = false
+    /**
+     * A notification arrived while rhythmic mode owned the strip. It is held
+     * rather than shown, and replayed once playback stops - the pulse window
+     * has not been started yet, so the hold is not counted against it.
+     */
+    @Volatile private var notificationDeferred = false
 
     // One-shot registrations at onCreate can fail when a service binder
     // isn't published yet (locked boot) or is selinux-blocked; the
@@ -100,10 +129,45 @@ class LightService : Service() {
         Log.i(TAG, "Notification pulse timeout reached")
         isNotificationPulsing = false
         isDynamicNotification = false
+        notificationDeferred = false
         postUpdateLedState()
         if (wakeLock?.isHeld == true) {
             wakeLock?.release()
         }
+    }
+
+    /**
+     * True when rhythmic mode (music or game beat) claims the strip.
+     *
+     * Mirrors the conditions in [updateLedState] rather than testing
+     * [isVisualizerActive]: during the moment playback starts the visualizer
+     * is not up yet, and keying off it would let a notification arriving in
+     * that window steal the LED instead of queueing.
+     *
+     * A notification landing while this holds is deferred rather than
+     * tearing the visualizer down: stopping it also released the Visualizer
+     * and reset the detector, so the strip went dark and then re-synced late
+     * from a cold noise floor when playback ended.
+     */
+    private fun rhythmicOwnsLed(): Boolean {
+        if (isGameModeActive && sharedPreferences.getBoolean("light_game_mode_enable", false) &&
+            audioManager?.isMusicActive == true
+        ) return true
+        return isMusicActive && sharedPreferences.getBoolean("light_music_enable", false)
+    }
+
+    /**
+     * Owns the 5s pulse window and the wakelock for an *actively shown*
+     * notification. Kept separate from [onStartCommand] so a deferred
+     * notification can start its window the moment the strip frees up.
+     */
+    private fun startPulseWindow() {
+        if (wakeLock?.isHeld == false) {
+            wakeLock?.acquire(6000)
+        }
+        isNotificationPulsing = true
+        mainHandler.removeCallbacks(notificationTimeoutRunnable)
+        mainHandler.postDelayed(notificationTimeoutRunnable, 5000)
     }
 
     private var visualizerHandlerThread: HandlerThread? = null
@@ -117,7 +181,6 @@ class LightService : Service() {
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             "light_enable",
-            "light_brightness",
             "light_music_enable",
             "light_game_mode_enable",
             "light_charging_enable",
@@ -135,7 +198,6 @@ class LightService : Service() {
             "light_game_mode_apps",
             "light_charging_color",
             "light_charging_mode",
-            "light_gradient_speed",
             "light_dynamic_notifications_enable" -> {
                 Log.i(TAG, "Preference changed: $key")
                 if (key == "light_music_enable" || key == "light_music_apps") {
@@ -148,6 +210,36 @@ class LightService : Service() {
                     ledHandler?.post { refreshGameState() }
                 }
                 postUpdateLedState()
+            }
+
+            // Seekbars, handled apart from the branch above on purpose. Both
+            // only move a scalar that the LED writers already read live, but a
+            // drag reports a change per step - roughly 60/second - and each one
+            // re-ran the whole ladder. That rewrote rgbcolor/repeat/period and
+            // restarted the gradient ramp mid-drag, so the strip strobed and
+            // the hue crawled at the drag rate instead of the set speed.
+            "light_brightness", "light_gradient_speed" ->
+                onLedScaleChanged(key)
+        }
+    }
+
+    /**
+     * Apply a brightness or gradient-speed change without re-running the
+     * priority ladder.
+     *
+     * The ladder exists to pick *which* effect owns the strip, and neither
+     * slider changes that answer - only its intensity or rate. Re-running it
+     * per drag step is what made the backlight thrash.
+     */
+    private fun onLedScaleChanged(key: String) {
+        when (key) {
+            // Read by sweepCycleMs() on every sweep tick, so it retunes live.
+            "light_gradient_speed" ->
+                LedManager.gradientSpeed = sharedPreferences.getInt("light_gradient_speed", 50)
+
+            "light_brightness" -> {
+                LedManager.brightnessScale = sharedPreferences.getInt("light_brightness", 100) / 100f
+                LedManager.refreshBrightness()
             }
         }
     }
@@ -424,16 +516,20 @@ class LightService : Service() {
         if (intent?.action == "ACTION_PULSE_NOTIFICATION") {
             Log.i(TAG, "Received ACTION_PULSE_NOTIFICATION")
             isDynamicNotification = intent.getBooleanExtra("dynamic", false)
-            if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(6000)
+            // Rhythmic mode outranks notifications. Hold this one until the
+            // strip is free instead of interrupting the beat; updateLedState
+            // releases it as soon as playback stops.
+            notificationDeferred = rhythmicOwnsLed()
+            if (notificationDeferred) {
+                isNotificationPulsing = true
+                Log.i(TAG, "Notification deferred: rhythmic mode active")
+            } else {
+                // Always refresh (not just on the false->true transition) so
+                // that dynamic notifications re-roll a fresh top/bottom color
+                // pair on every new notification, even while still pulsing.
+                startPulseWindow()
             }
-            // Always refresh (not just on the false->true transition) so that
-            // dynamic notifications re-roll a fresh top/bottom color pair on
-            // every new notification, even while still pulsing.
-            isNotificationPulsing = true
             postUpdateLedState()
-            mainHandler.removeCallbacks(notificationTimeoutRunnable)
-            mainHandler.postDelayed(notificationTimeoutRunnable, 5000)
         } else {
             postUpdateLedState()
         }
@@ -575,10 +671,14 @@ class LightService : Service() {
     private var lastColorChangeTime = 0L
     @Volatile private var lastBeatColorHex = ""
 
-    // Beat detector state: bass energy vs adaptive floor (kick/onset),
-    // plus smoothed level (fast attack, slow release). Reset per session.
-    @Volatile private var bassFloor = 0f
+    // Beat detector state: peak-hold envelope (instant attack, slow decay)
+    // plus a smoothed level (fast attack, slow release). Reset per session.
+    @Volatile private var bassPeak = 0f
     @Volatile private var smoothLevel = 0f
+    // Decaying spike on top of smoothLevel so a beat punches without
+    // slamming brightness to maximum.
+    @Volatile private var beatFlash = 0f
+    @Volatile private var lastOnsetMs = 0L
 
     // Visualizer color source: music pref by default, game pref while a
     // game is focused and audio is playing (game branch sets these).
@@ -641,8 +741,10 @@ class LightService : Service() {
         Log.i(TAG, "startVisualizer")
         vizGeneration++
         lastBeatColorHex = ""
-        bassFloor = 0f
+        bassPeak = 0f
         smoothLevel = 0f
+        beatFlash = 0f
+        lastOnsetMs = 0L
         try {
             visualizer = Visualizer(0)
             visualizer?.captureSize = Visualizer.getCaptureSizeRange()[1]
@@ -652,27 +754,45 @@ class LightService : Service() {
                 override fun onFftDataCapture(v: Visualizer?, fft: ByteArray?, samplingRate: Int) {
                     if (fft == null || fft.isEmpty()) return
 
-                    // Bass-weighted energy (low bins carry kick/bass) plus
-                    // overall peak for the noise floor estimate.
+                    // Bass energy. A kick concentrates in the lowest 2-4
+                    // bins, so a flat mean over a wider window just dilutes
+                    // the transient and reports onsets late. Taper the
+                    // weights instead of averaging flat.
                     val bins = fft.size / 2
-                    val bassBins = minOf(8, bins)
+                    val bassBins = minOf(4, bins)
                     var bassSum = 0f
+                    var wSum = 0f
                     for (i in 0 until bassBins) {
                         val re = fft[i * 2].toFloat()
                         val im = fft[i * 2 + 1].toFloat()
-                        bassSum += sqrt(re * re + im * im)
+                        val w = 1f - 0.15f * i
+                        bassSum += sqrt(re * re + im * im) * w
+                        wSum += w
                     }
-                    val bass = if (bassBins > 0) bassSum / bassBins else 0f
+                    val bass = if (wSum > 0f) bassSum / wSum else 0f
 
-                    // Onset (beat): energy clearly above the adaptive floor.
-                    val onset = bass > ONSET_FLOOR && bass > bassFloor * ONSET_RATIO
-                    bassFloor += (bass - bassFloor) * (if (bass > bassFloor) 0.25f else 0.05f)
+                    // Onset: current energy clearly above the recent peak.
+                    // Compared against the envelope value from *before* this
+                    // frame is absorbed - otherwise the instant attack would
+                    // raise the bar past the very sample that crossed it.
+                    val prevPeak = bassPeak
+                    if (bass > prevPeak) bassPeak = bass
+                    else bassPeak += (bass - prevPeak) * PEAK_DECAY
+
+                    val nowMs = android.os.SystemClock.uptimeMillis()
+                    val onset = bass > ONSET_FLOOR &&
+                            bass > prevPeak * ONSET_RATIO &&
+                            nowMs - lastOnsetMs > ONSET_REFRACTORY_MS
+                    if (onset) lastOnsetMs = nowMs
 
                     // Level: fast attack so kicks pop, slow release so it
                     // breathes instead of flickering.
-                    val target = (bass * BRIGHT_GAIN).coerceIn(0f, 80f)
+                    val target = (bass * BRIGHT_GAIN).coerceIn(0f, VISUALIZER_MAX)
                     smoothLevel += (target - smoothLevel) * (if (target > smoothLevel) ATTACK else RELEASE)
-                    val brightness = if (onset) 80 else smoothLevel.toInt()
+                    beatFlash = if (onset) 1f else beatFlash * BEAT_FLASH_DECAY
+                    val brightness =
+                        (smoothLevel + beatFlash * VISUALIZER_MAX * BEAT_FLASH)
+                            .toInt().coerceIn(0, VISUALIZER_MAX.toInt())
 
                     pendingOnset = onset
                     pendingBrightness = brightness
@@ -721,8 +841,8 @@ class LightService : Service() {
 
     /**
      * Shared gradient-vs-solid dispatch: "gradient" runs the hue sweep,
-     * anything else calls the solid effect. Keeps the six priority
-     * branches below from duplicating it.
+     * anything else calls the solid effect. Keeps the priority branches
+     * below from duplicating it.
      */
     private fun applyEffectColor(key: String, default: String, solid: (String) -> Unit) {
         val color = sharedPreferences.getString(key, default) ?: default
@@ -734,6 +854,11 @@ class LightService : Service() {
         val masterEnabled = sharedPreferences.getBoolean("light_enable", false)
         if (!masterEnabled) {
             Log.d(TAG, "updateLedState: Master toggle disabled, stopping all effects")
+            // Drop anything still queued: with the feature off there is no
+            // later update to replay it into, so it would fire on re-enable.
+            isNotificationPulsing = false
+            notificationDeferred = false
+            mainHandler.removeCallbacks(notificationTimeoutRunnable)
             stopAllEffects()
             return
         }
@@ -765,30 +890,7 @@ class LightService : Service() {
             }
         }
 
-        // Priority 3: Notification Pulse
-        if (isNotificationPulsing) {
-            if (isDynamicNotification) {
-                val dynEnabled = sharedPreferences.getBoolean("light_dynamic_notifications_enable", false)
-                if (dynEnabled) {
-                    Log.d(TAG, "updateLedState: Dynamic notification pulse priority")
-                    stopAllEffects()
-                    LedManager.setDynamicBlink(1000, 1000, 1000, 1000, true)
-                    return
-                }
-            } else {
-                val notifEnabled = sharedPreferences.getBoolean("light_notifications_enable", false)
-                if (notifEnabled) {
-                    Log.d(TAG, "updateLedState: Notification pulse priority")
-                    stopAllEffects()
-                    applyEffectColor("light_notifications_color", "ff0000") { color ->
-                        LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
-                    }
-                    return
-                }
-            }
-        }
-
-        // Priority 4: Game Mode (beat-reactive while audio plays)
+        // Priority 3: Game Mode (beat-reactive while audio plays)
         if (isGameModeActive) {
             val gameEnabled = sharedPreferences.getBoolean("light_game_mode_enable", false)
             if (gameEnabled) {
@@ -813,7 +915,7 @@ class LightService : Service() {
             }
         }
 
-        // Priority 5: Music Visualizer (active playback wins over ambient charging)
+        // Priority 4: Music Visualizer (active playback wins over ambient charging)
         if (isMusicActive) {
             val musicEnabled = sharedPreferences.getBoolean("light_music_enable", false)
             if (musicEnabled) {
@@ -825,6 +927,38 @@ class LightService : Service() {
                     startVisualizer()
                 }
                 return
+            }
+        }
+
+        // Priority 5: Notification Pulse
+        //
+        // Deliberately below both rhythmic branches. Reaching this point means
+        // nothing beat-driven owns the strip, so any notification that was
+        // held back is released now and starts its 5s window here.
+        if (isNotificationPulsing && notificationDeferred && !rhythmicOwnsLed()) {
+            Log.i(TAG, "Releasing deferred notification: rhythmic mode idle")
+            notificationDeferred = false
+            startPulseWindow()
+        }
+        if (isNotificationPulsing) {
+            if (isDynamicNotification) {
+                val dynEnabled = sharedPreferences.getBoolean("light_dynamic_notifications_enable", false)
+                if (dynEnabled) {
+                    Log.d(TAG, "updateLedState: Dynamic notification pulse priority")
+                    stopAllEffects()
+                    LedManager.setDynamicBlink(1000, 1000, 1000, 1000, true)
+                    return
+                }
+            } else {
+                val notifEnabled = sharedPreferences.getBoolean("light_notifications_enable", false)
+                if (notifEnabled) {
+                    Log.d(TAG, "updateLedState: Notification pulse priority")
+                    stopAllEffects()
+                    applyEffectColor("light_notifications_color", "ff0000") { color ->
+                        LedManager.setBlink(color, 1000, 1000, 1000, 1000, true)
+                    }
+                    return
+                }
             }
         }
 
