@@ -296,7 +296,21 @@ blob_fixups: blob_fixups_user_type = {
         'vendor/lib64/libcodec2_mtk_venc.so'
     ): blob_fixup()
         .replace_needed('libcodec2_aidl.so', 'libcodec2_aidl_prebuilt.so')
+        .replace_needed('libcodec2_hidl_plugin.so', 'libcodec2_hidl_plugin_mtk.so')
+        .replace_needed('libcodec2_vndk.so', 'libcodec2_vndk_mtk.so')
+        .replace_needed('libcodec2_hal_common.so', 'libcodec2_hal_common_mtk.so')
         .replace_needed('libformatter.so', 'libformatter_mtk.so'),
+    (
+        'vendor/lib64/libcodec2_aidl.so'
+    ): blob_fixup()
+        .replace_needed('libcodec2_hidl_plugin.so', 'libcodec2_hidl_plugin_mtk.so')
+        .replace_needed('libcodec2_vndk.so', 'libcodec2_vndk_mtk.so')
+        .replace_needed('libcodec2_hal_common.so', 'libcodec2_hal_common_mtk.so'),
+    (
+        'vendor/lib64/libcodec2_hal_common.so',
+        'vendor/lib64/libcodec2_hidl_plugin.so'
+    ): blob_fixup()
+        .replace_needed('libcodec2_vndk.so', 'libcodec2_vndk_mtk.so'),
 }  # fmt: skip
 
 module = ExtractUtilsModule(
