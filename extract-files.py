@@ -294,7 +294,8 @@ blob_fixups: blob_fixups_user_type = {
         'vendor/lib64/libcodec2_mtk_vdec.so',
         'vendor/lib64/libcodec2_mtk_venc.so'
     ): blob_fixup()
-        .replace_needed('libcodec2_aidl.so', 'libcodec2_aidl_prebuilt.so'),
+        .replace_needed('libcodec2_aidl.so', 'libcodec2_aidl_prebuilt.so')
+        .replace_needed('libformatter.so', 'libformatter_mtk.so'),
 }  # fmt: skip
 
 module = ExtractUtilsModule(
