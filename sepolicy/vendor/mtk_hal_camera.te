@@ -1,3 +1,5 @@
+typeattribute mtk_hal_camera bpfdomain;
+
 get_prop(mtk_hal_camera, bpf_progs_loaded_prop)
 
 allow mtk_hal_camera fs_bpf:dir search;
