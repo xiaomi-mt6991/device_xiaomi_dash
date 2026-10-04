@@ -232,6 +232,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/init/init.recovery.mt6991.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.mt6991.rc
 
+# ION
+$(call soong_config_set_bool,libion,legacy_impl,true)
+
 # Keymint
 PRODUCT_PACKAGES += \
     android.hardware.hardware_keystore_V3.xml
