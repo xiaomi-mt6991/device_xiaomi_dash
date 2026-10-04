@@ -48,6 +48,9 @@ BOARD_TAGS_OFFSET := 0x07c88000
 BOARD_RAMDISK_OFFSET := 0x26f08000
 BOARD_RAMDISK_USE_LZ4 := true
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+BOARD_BOOTCONFIG += androidboot.selinux=permissive
+endif
 BOARD_BOOTCONFIG += androidboot.console=0
 BOARD_BOOTCONFIG += androidboot.hypervisor.version=GenieZone
 BOARD_BOOTCONFIG += androidboot.hypervisor.vm.supported=1
