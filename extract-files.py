@@ -102,6 +102,9 @@ lib_fixups: lib_fixups_user_type = {
 
 
 blob_fixups: blob_fixups_user_type = {
+    'vendor/bin/mnld' : blob_fixup()
+        .replace_needed('android.hardware.sensors-V2-ndk.so', 'android.hardware.sensors-V3-ndk.so')
+        .replace_needed('libmnl.so', 'libmnl_mtk.so'),
     (
         'odm/bin/hw/vendor.xiaomi.hw.touchfeature-service',
         'odm/lib64/libadaptivehdr.so',
@@ -118,7 +121,6 @@ blob_fixups: blob_fixups_user_type = {
         'odm/lib64/libtruetone.so',
         'odm/lib64/libvideomode.so',
         'odm/lib64/libdynamicelvss.so',
-        'vendor/bin/mnld',
         'vendor/lib64/mt6991/libaalservice.so',
         'vendor/lib64/mt6991/libpqconfig.so'
     ): blob_fixup()
