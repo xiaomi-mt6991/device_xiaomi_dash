@@ -220,6 +220,20 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/lib64/hw/android.hardware.audio.effect.aidl-impl-mediatek.so': blob_fixup()
         .replace_needed('android.media.audio.common.types-V5-ndk.so', 'android.media.audio.common.types-V3-ndk.so')
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v36.so'),
+    # vendor.mediatek.hardware.bluetooth.audio-V1-ndk is not usable in this tree:
+    # it drags android.media.audio.common.types-V2-ndk-source in and collides with
+    # the types-V3 pulled by android.hardware.bluetooth.audio-V4-ndk. The blobs
+    # below only use its parcel bookkeeping symbols, so libmtk_btaudio_aidl_shim
+    # (vendor/xiaomi/dash/shims/libmtk_btaudio_aidl) provides them instead.
+    (
+        'vendor/lib64/android.hardware.bluetooth.audio-impl-mediatek.so',
+    ): blob_fixup()
+        .remove_needed('vendor.mediatek.hardware.bluetooth.audio-V1-ndk.so'),
+    (
+        'vendor/lib64/hw/audio.primary.mediatek.so',
+        'vendor/lib64/libbluetooth_audio_session_aidl_mtk.so',
+    ): blob_fixup()
+        .replace_needed('vendor.mediatek.hardware.bluetooth.audio-V1-ndk.so', 'libmtk_btaudio_aidl_shim.so'),
     'vendor/lib64/hw/android.hardware.soundtrigger3-impl.so': blob_fixup()
         .replace_needed('libaudio_aidl_conversion_common_ndk.so', 'libaudio_aidl_conversion_common_ndk_prebuilt.so'),
     'vendor/lib64/hw/hwcomposer.mtk_common.so': blob_fixup()
