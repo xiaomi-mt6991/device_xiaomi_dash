@@ -15,6 +15,8 @@ allow hal_hypsys_vendor kmsg_device:chr_file r_file_perms;
 # dash-miuicamera/sepolicy/vendor/miuicamera.te.
 allow appdomain hal_hypsys_vendor:binder call;
 allow hal_hypsys_vendor appdomain:binder { call transfer };
+# stock (merged_hal_service): use fds apps pass in binder calls (watermark).
+allow hal_hypsys_vendor appdomain:fd use;
 
 # hypsys <-> misys core-service are both this domain but separate
 # processes; without this pair every IMiSysCore call returns -1.
