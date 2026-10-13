@@ -250,9 +250,11 @@ on post-fs-data
     chmod 0771 /data/vendor/camera_dump
 
     #XIAOMI: Create camera directory for mivifwk file --start
+    # 0777 not stock 0771: ported MiuiCamera is a normal-uid app writing
+    # MIVI LUT/watermark resources here itself (stock is system-uid).
     mkdir /data/vendor/camera
     chown root system /data/vendor/camera
-    chmod 0771 /data/vendor/camera
+    chmod 0777 /data/vendor/camera
     mkdir /data/vendor/camera/offlinelog 0777 cameraserver audio
     # for skynet
     chmod 0666 /dev/camlog
@@ -264,7 +266,7 @@ on post-fs-data
     chmod 755 mnt/vendor/persist/camera
     mkdir /data/vendor/camera
     chown root system /data/vendor/camera
-    chmod 0771 /data/vendor/camera
+    chmod 0777 /data/vendor/camera
     #XIAOMI: Create camera directory for calibration file --end
 
     #Create imgsys mount point

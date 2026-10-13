@@ -9,3 +9,10 @@ type countrycode_block_device, dev_type;
 
 # TouchFeature
 type touchfeature_device, dev_type;
+
+# hypsys blackbox partition; expdb_block_device type comes from an MTK
+# sepolicy package in the full tree (not redeclared here).
+type blackbox_block_device, dev_type;
+
+# IoMonitor module device node (chmod 0666 in hypsys_vendor.rc).
+type io_monitor_device, dev_type;

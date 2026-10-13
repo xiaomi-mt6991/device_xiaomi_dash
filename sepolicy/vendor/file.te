@@ -7,6 +7,8 @@ type sysfs_re25_calib, fs_type, sysfs_type;
 # Camera
 type camera_persist_file, file_type;
 type vendor_camera_update_db_file, file_type, vendor_file_type;
+# MIVI resource dir (/data/vendor/camera: LUT cubes, watermark layout jsons)
+type vendor_camera_data_file, data_file_type, file_type;
 
 # Diag
 type minidump_data_file, data_file_type, file_type;
@@ -46,3 +48,6 @@ type vendor_sysfs_touch, fs_type, sysfs_type;
 
 # Touchfeature
 type vendor_touchfeature_device, dev_type;
+
+# IoMonitor module log dir (stock file_contexts).
+type data_io_monitor_file, data_file_type, file_type;

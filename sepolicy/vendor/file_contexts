@@ -8,6 +8,7 @@
 /(vendor|system/vendor)/bin/batterysecret u:object_r:vendor_batterysecret_exec:s0
 
 # Camera
+/data/vendor/camera(/.*)? u:object_r:vendor_camera_data_file:s0
 /odm/bin/crossbuild/DataSet/SQLiteModule/db(/.*)? u:object_r:vendor_camera_update_db_file:s0
 /vendor/bin/crossbuild(/.*)? u:object_r:vendor_bin_crossbuild_file:s0
 
@@ -67,6 +68,8 @@
 
 # HypSys
 /vendor/bin/hw/xiaomi\.system\.hypsys\.common-service-dummy u:object_r:hal_hypsys_vendor_exec:s0
+/(vendor|system/vendor)/bin/hypsys_vendor u:object_r:hal_hypsys_vendor_exec:s0
+/(vendor|system/vendor)/bin/hw/vendor\.xiaomi\.hardware\.misys\.core-service u:object_r:hal_hypsys_vendor_exec:s0
 
 # ID manager
 /(odm|vendor|system/vendor)/bin/idmanager u:object_r:hal_idmanager_default_exec:s0
@@ -115,3 +118,10 @@
 
 # Vibrator
 /vendor/bin/hw/vendor\.qti\.hardware\.vibrator\.service u:object_r:hal_vibrator_default_exec:s0
+
+# hypsys blackbox/MtkDfd storage (stock vendor_file_contexts parity).
+# expdb is already labeled by an MTK package in the full tree; only the
+# blackbox node lacked a spec (stayed generic block_device).
+/dev/block/by-name/blackbox u:object_r:blackbox_block_device:s0
+/dev/io_monitor u:object_r:io_monitor_device:s0
+/data/vendor/io_monitor(/.*)? u:object_r:data_io_monitor_file:s0

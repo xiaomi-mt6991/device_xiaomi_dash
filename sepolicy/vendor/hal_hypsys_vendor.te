@@ -7,3 +7,47 @@ binder_use(hal_hypsys_vendor)
 init_daemon_domain(hal_hypsys_vendor)
 
 allow hal_hypsys_vendor hal_hypsys_vendor_service:service_manager { add find };
+
+# vendor/etc/init/hypsys_vendor.rc opens /dev/kmsg r at start.
+allow hal_hypsys_vendor kmsg_device:chr_file r_file_perms;
+
+# misys clients: the camera app (platform_app_36); find grant lives in
+# dash-miuicamera/sepolicy/vendor/miuicamera.te.
+allow appdomain hal_hypsys_vendor:binder call;
+allow hal_hypsys_vendor appdomain:binder { call transfer };
+
+# hypsys <-> misys core-service are both this domain but separate
+# processes; without this pair every IMiSysCore call returns -1.
+allow hal_hypsys_vendor hal_hypsys_vendor:binder { call transfer };
+
+# ChargerLogger reads boot status, same grant as hal_idmanager_default.
+get_prop(hal_hypsys_vendor, boot_status_prop)
+
+# Blackbox/expdb storage (stock misys parity): expdb scan, ChargerLogger
+# bsplog writes, IoMonitor /dev + data dirs.
+allow hal_hypsys_vendor block_device:dir r_dir_perms;
+allow hal_hypsys_vendor vendor_bsp_data_log_file:dir create_dir_perms;
+allow hal_hypsys_vendor vendor_bsp_data_log_file:file create_file_perms;
+allow hal_hypsys_vendor io_monitor_device:chr_file rw_file_perms;
+allow hal_hypsys_vendor data_io_monitor_file:dir create_dir_perms;
+allow hal_hypsys_vendor data_io_monitor_file:file create_file_perms;
+
+# getattr on enumerated /dev/block/sdc* only; generic block_device stays
+# scan-only (AOSP neverallows read/write), real I/O via expdb below.
+allow hal_hypsys_vendor block_device:blk_file { getattr ioctl };
+allow hal_hypsys_vendor expdb_block_device:blk_file { getattr open read write append ioctl setattr lock map };
+# Second PreparePartitions chmod target: hypsys hardcodes
+# /dev/block/by-name/blackbox; stock labels it blackbox_block_device and
+# grants setattr for core's chmod.
+allow hal_hypsys_vendor blackbox_block_device:blk_file { getattr open read write append ioctl setattr lock map watch watch_reads };
+allow hal_hypsys_vendor self:netlink_kobject_uevent_socket { create getattr read bind setopt };
+
+# Watermark/toolbar assets + camera persist data; full stock perm lists
+# (CIL hal_misys_vendor_default mnt_vendor_file/camera_persist_file/
+# vendor_camera_data_file).
+allow hal_hypsys_vendor mnt_vendor_file:dir { ioctl read write create getattr setattr lock rename open watch watch_reads add_name remove_name reparent search rmdir };
+allow hal_hypsys_vendor mnt_vendor_file:file { ioctl read write create getattr setattr lock append map unlink rename open watch watch_reads };
+allow hal_hypsys_vendor camera_persist_file:dir { ioctl read write create getattr setattr lock rename open watch watch_reads add_name remove_name reparent search rmdir };
+allow hal_hypsys_vendor camera_persist_file:file { ioctl read write create getattr setattr lock append map unlink rename open watch watch_reads };
+allow hal_hypsys_vendor vendor_camera_data_file:dir { ioctl read write create getattr setattr lock rename open watch watch_reads add_name remove_name reparent search rmdir };
+allow hal_hypsys_vendor vendor_camera_data_file:file { ioctl read write create getattr setattr lock append map unlink rename open watch watch_reads };
