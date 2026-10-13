@@ -21,3 +21,6 @@ allow mtk_hal_camera system_data_file:dir search;
 allow mtk_hal_camera sysfs:file { read open getattr };
 allow mtk_hal_camera vendor_data_file:sock_file { create unlink };
 allow mtk_hal_camera camera_config_prop:file { read open getattr map };
+
+# DSAC fast-direct buffer mapping via /dev/dio_dma_mapper_misc (stock parity).
+allow mtk_hal_camera dio_dma_mapper_device:chr_file { ioctl read write getattr lock append map open watch watch_reads };

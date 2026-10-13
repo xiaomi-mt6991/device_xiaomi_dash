@@ -16,3 +16,6 @@ type blackbox_block_device, dev_type;
 
 # IoMonitor module device node (chmod 0666 in hypsys_vendor.rc).
 type io_monitor_device, dev_type;
+
+# Camera DSAC direct-I/O DMA mapper node (ueventd.mt6991.rc creates it).
+type dio_dma_mapper_device, dev_type;

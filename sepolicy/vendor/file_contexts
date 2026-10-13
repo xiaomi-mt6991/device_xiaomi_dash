@@ -125,3 +125,4 @@
 /dev/block/by-name/blackbox u:object_r:blackbox_block_device:s0
 /dev/io_monitor u:object_r:io_monitor_device:s0
 /data/vendor/io_monitor(/.*)? u:object_r:data_io_monitor_file:s0
+/dev/dio_dma_mapper_misc u:object_r:dio_dma_mapper_device:s0
