@@ -249,6 +249,7 @@ vendor/bin/hw/vendor.xiaomi.hardware.misys.core-service
 vendor/etc/init/hypsys_vendor.rc
 vendor/etc/init/vendor.xiaomi.hardware.misys.core-service.rc
 vendor/lib64/vendor.xiaomi.hardware.misys.common-V3-ndk.so
+vendor/lib64/vendor.xiaomi.hardware.mtkblackbox-V3-ndk.so
 vendor/lib64/libbluetooth_mtk_pure.so
 vendor/lib64/libbt-vendor.so
 
@@ -267,6 +268,9 @@ vendor/firmware/BT_RAM_CODE_MT6639_new9gen2_1_hdr.bin
 vendor/etc/vintf/manifest/bluetooth_audio.xml:vendor/etc/vintf/manifest/bluetooth_audio_mtk.xml
 vendor/lib64/android.hardware.bluetooth.audio-impl-mediatek.so
 vendor/lib64/libbluetooth_audio_session_aidl_mtk.so
+# Stock BT audio AIDL parcelables; real V1-ndk name collides with the source
+# aidl_interface in hardware/mediatek, so it ships under a private filename
+vendor/lib64/vendor.mediatek.hardware.bluetooth.audio-V1-ndk.so:vendor/lib64/libmediatek_btaudio_aidl_v1.so;FIX_SONAME
 
 # Camera
 odm/etc/camera/102_SummerDay.png
@@ -814,6 +818,7 @@ vendor/etc/init/camerahalserver.rc
 vendor/etc/vintf/manifest/manifest_aovservice.xml
 vendor/etc/vintf/manifest/manifest_cameraprovider.xml
 vendor/etc/vintf/manifest/manifest_isphal.xml
+vendor/etc/vintf/manifest/manifest_mtkblackbox.xml
 vendor/etc/vintf/manifest/manifest_uievent.xml
 vendor/etc/vintf/manifest/vendor.xiaomi.hardware.aidlbgservice-service.xml
 vendor/etc/vintf/manifest/vendor.xiaomi.hardware.camera.mivimessage-service.xml
