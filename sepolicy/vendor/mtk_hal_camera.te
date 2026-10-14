@@ -16,6 +16,8 @@ r_dir_file(mtk_hal_camera, persist_data_file)
 r_dir_file(mtk_hal_camera, sysfs_chipid)
 r_dir_file(mtk_hal_camera, sysfs_therm)
 r_dir_file(mtk_hal_camera, vendor_camera_update_db_file)
+# staged filter LUTs/watermarks in /data/vendor/camera (stock reads them as vendor_data_file)
+r_dir_file(mtk_hal_camera, vendor_camera_data_file)
 
 allow mtk_hal_camera system_data_file:dir search;
 allow mtk_hal_camera sysfs:file { read open getattr };
