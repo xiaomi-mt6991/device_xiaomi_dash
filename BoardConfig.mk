@@ -74,24 +74,9 @@ BOARD_KERNEL_IMAGE_NAME := Image.lz4
 BOARD_USES_GENERIC_KERNEL_IMAGE := true
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 
-KERNEL_PATH := $(DEVICE_PATH)-kernel
-TARGET_PREBUILT_KERNEL := $(KERNEL_PATH)/$(BOARD_KERNEL_IMAGE_NAME)
-TARGET_PREBUILT_KERNEL_HEADERS := $(KERNEL_PATH)/kernel-uapi-headers.tar.gz
-BOARD_PREBUILT_DTBIMAGE_DIR := $(KERNEL_PATH)/dtb
-
-DLKM_MODULES_PATH := $(KERNEL_PATH)/modules/vendor_dlkm
-RAMDISK_MODULES_PATH := $(KERNEL_PATH)/modules/vendor_ramdisk
-SYSTEM_MODULES_PATH := $(KERNEL_PATH)/modules/system_dlkm
-
-BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(SYSTEM_MODULES_PATH)/*.ko)
-BOARD_SYSTEM_KERNEL_MODULES_LOAD := $(patsubst %,$(SYSTEM_MODULES_PATH)/%,$(shell cat $(SYSTEM_MODULES_PATH)/modules.load))
-
-BOARD_VENDOR_KERNEL_MODULES := $(wildcard $(DLKM_MODULES_PATH)/*.ko)
-BOARD_VENDOR_KERNEL_MODULES_LOAD := $(patsubst %,$(DLKM_MODULES_PATH)/%,$(shell cat $(DLKM_MODULES_PATH)/modules.load))
-
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES := $(wildcard $(RAMDISK_MODULES_PATH)/*.ko)
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD := $(patsubst %,$(RAMDISK_MODULES_PATH)/%,$(shell cat $(RAMDISK_MODULES_PATH)/modules.load))
-BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD  := $(patsubst %,$(RAMDISK_MODULES_PATH)/%,$(shell cat $(RAMDISK_MODULES_PATH)/modules.load.recovery))
+# Source-built (Kleaf) kernel: image, headers, dtb and module lists.
+# See kernel/README.md for the bazel build this consumes.
+include $(DEVICE_PATH)/kernel/BoardConfigKernel.mk
 
 # Partitions
 BOARD_USES_METADATA_PARTITION := true
