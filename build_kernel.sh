@@ -11,7 +11,48 @@ set -euo pipefail
 ANDROID_ROOT="${ANDROID_ROOT:-$(pwd)}"
 DEVICE_DIR="${ANDROID_ROOT}/device/xiaomi/dash"
 KERNEL_DIR="${ANDROID_ROOT}/kernel/xiaomi/dash"
-BAZEL="${ANDROID_ROOT}/tools/bazel"
+
+# Find bazel: prefer system bazel (7+), fallback to prebuilt, fallback to bazelisk
+find_bazel() {
+    # 1. Check for system bazel 7+
+    if command -v bazel >/dev/null 2>&1; then
+        local ver=$(bazel --version 2>/dev/null | grep -oE '[0-9]+' | head -1)
+        if [[ -n "$ver" && "$ver" -ge 7 ]]; then
+            echo "bazel"
+            return 0
+        fi
+    fi
+
+    # 2. Check prebuilt bazel
+    local prebuilt="${ANDROID_ROOT}/prebuilts/bazel/linux-x86_64/bazel"
+    if [[ -x "$prebuilt" ]]; then
+        echo "$prebuilt"
+        return 0
+    fi
+
+    # 3. Check tools/bazel wrapper
+    local wrapper="${ANDROID_ROOT}/tools/bazel"
+    if [[ -x "$wrapper" ]]; then
+        echo "$wrapper"
+        return 0
+    fi
+
+    # 4. Try bazelisk
+    if command -v bazelisk >/dev/null 2>&1; then
+        echo "bazelisk"
+        return 0
+    fi
+
+    return 1
+}
+
+BAZEL=$(find_bazel) || {
+    echo "ERROR: No bazel 7+ found. Install with:"
+    echo "  sudo apt install bazel        # Ubuntu/Debian"
+    echo "  or: npm install -g @bazel/bazelisk"
+    exit 1
+}
+echo "Using bazel: $BAZEL"
 
 # Required env for Kleaf
 export KERNEL_VERSION=kernel-6.6
@@ -25,6 +66,7 @@ KERNEL_TARGETS=(
     "//kernel_device_modules-6.6:mgk_64_k66_merged_uapi_headers.user"
 )
 
+# Use --noenable_bzlmod only if bazel supports it (7+)
 BAZEL_FLAGS=(
     --noenable_bzlmod
     --//build/bazel_mgk_rules:kernel_version=6.6
@@ -47,11 +89,6 @@ EOF
 
 build_kernel() {
     echo "=== Building kernel in ${KERNEL_DIR} ==="
-    if [[ ! -f "${BAZEL}" ]]; then
-        echo "ERROR: bazel wrapper not found at ${BAZEL}"
-        echo "Run 'repo sync' to fetch build/kernel/kleaf"
-        exit 1
-    fi
 
     cd "${KERNEL_DIR}"
 
